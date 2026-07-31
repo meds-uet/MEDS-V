@@ -141,7 +141,17 @@ module vec_lsu
   assign vrf_wbe_o   = (state_q == S_RSP && mem_rsp_valid_i)
                      ? expand_to_bytes(elem_active, uop_i.eew) : '0;
 
+  // Tie-offs for bundle fields not consumed by this skeleton.  stride_i and
+  // uop_i.mop become live when strided addressing lands; access_bytes when
+  // multi-request splitting lands; vtype_i when EMUL affects the pass count.
   logic _unused;
-  assign _unused = |stride_i | |access_bytes | vtype_i.vill | |uop_i.mop;
+  assign _unused = |stride_i | |access_bytes | |uop_i.mop | |uop_i.op
+                 | |uop_i.vd | |uop_i.vs1 | |uop_i.vs2 | |uop_i.fmt
+                 | |uop_i.emul | uop_i.valid | uop_i.use_scalar
+                 | uop_i.writes_vrf | uop_i.writes_xrf | uop_i.writes_mask
+                 | uop_i.is_widening | uop_i.is_narrowing | uop_i.is_reduction
+                 | |uop_i.scalar_op
+                 | vtype_i.vill | vtype_i.vta | vtype_i.vma
+                 | |vtype_i.vsew | |vtype_i.vlmul;
 
 endmodule : vec_lsu
