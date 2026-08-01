@@ -23,7 +23,7 @@ That is exactly the right starting point. This book assumes:
 
 Every vector-specific concept is built from zero.
 
-## What the team has at the end
+## What the team ends up with
 
 A working, parameterisable RISC-V vector processor — the team call the reference design
 **MEDS-V** — that:

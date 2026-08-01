@@ -179,30 +179,7 @@ fails.
 
 ---
 
-## E.7 Signature block
-
-```
-MEDS-V v1 Scope Contract
-Revision: 1.0          Date: ____________
-
-Agreed:
-
-  Architect / lead        ______________________   ____________
-
-  Verification lead       ______________________   ____________
-
-  Team members            ______________________   ____________
-                          ______________________   ____________
-                          ______________________   ____________
-                          ______________________   ____________
-
-Revision history
-  1.0  ____________  Initial scope agreed
-```
-
----
-
-## E.8 A closing note on scope
+## E.7 A closing note on scope
 
 It is worth stating plainly, because the instinct runs the other way:
 

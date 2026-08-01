@@ -93,8 +93,8 @@ executing.
  ║  │  ⑤  LANE ARRAY  (× NR_LANES)   │────────────────────┘    │  ⑦  MASK     │      ║
  ║  │  ┌──────────┐  ┌──────────┐    │                         │     UNIT     │      ║
  ║  │  │ VALU     │  │ VMUL     │    │◄────────────────────────│  (v0 read,   │      ║
- ║  │  │ add/sub  │  │ mul/macc │    │      per-element         │  wr-enable   │      ║
- ║  │  │ logic    │  │ widening │    │      enables             │  generation) │      ║
+ ║  │  │ add/sub  │  │ mul/macc │    │      per-element        │  wr-enable   │      ║
+ ║  │  │ logic    │  │ widening │    │      enables            │  generation) │      ║
  ║  │  │ shift    │  └──────────┘    │                         └──────────────┘      ║
  ║  │  │ compare  │                  │                                               ║
  ║  │  └──────────┘                  │         ┌────────────────────────┐            ║

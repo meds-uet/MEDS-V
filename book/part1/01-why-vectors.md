@@ -133,7 +133,7 @@ count on paper.
 
 ---
 
-## 1.3 The three things vectors actually buy one
+## 1.3 The three things vectors actually buy
 
 Be precise about the wins, because each one maps to a design decision later.
 
@@ -157,7 +157,7 @@ of a *pattern*, not 16 independent addresses. **Design consequence:** the load/s
 can generate one wide, aligned burst instead of 16 lookups, and the request can be issued
 long before the data is needed. Latency hiding becomes structural rather than speculative.
 
-### And the thing they don't buy one
+### And the thing they don't buy
 Vectors do **not** help code that is:
 - **control-heavy** — `if`-dense logic with unpredictable branches (masking helps some;
   Chapter 4 §4.7),

@@ -63,8 +63,26 @@ scripts/              Measurement and verification tooling
 ├── param_sweep.py        Elaborate across the VLEN × lane-count sweep
 ├── cosim_diff.py         Compare an RTL trace against Spike's golden trace
 ├── bench_kernels.py      Instruction-count benchmark for the six kernels
-└── count_instr.py        SAXPY instruction counting
+├── count_instr.py        SAXPY instruction counting
+└── build_pdf.py          Render the whole book to a single PDF
+
+docs/
+└── MEDS-V-Building-a-RISC-V-Vector-Processor.pdf    174 pages, generated
 ```
+
+### The book as a PDF
+
+The whole book renders to a single typeset PDF — title page, contents, part dividers,
+and all 22 chapters and appendices:
+
+```bash
+python3 scripts/build_pdf.py
+```
+
+It needs `pandoc` and `google-chrome`/`chromium`; there is no LaTeX dependency. Chrome's
+print-to-PDF does the rendering, which suits this book better than LaTeX would, because the
+ASCII block diagrams need a monospace font with full box-drawing coverage and no line
+wrapping at all.
 
 ---
 

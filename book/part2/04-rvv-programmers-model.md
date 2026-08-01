@@ -21,7 +21,7 @@ RVV adds exactly three things to the RISC-V architectural state:
   │  2.  7 control CSRs        vstart vxsat vxrm vcsr            │
   │                            vl  vtype  vlenb                  │
   │                                                              │
-  │  3.  mstatus.VS[1:0]       the vector-unit enable/dirty state │
+  │  3.  mstatus.VS[1:0]       the vector-unit enable/dirty state│
   └──────────────────────────────────────────────────────────────┘
 ```
 
