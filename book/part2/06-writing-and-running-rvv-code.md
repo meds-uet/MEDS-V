@@ -1,7 +1,7 @@
 # Chapter 6 — Writing and Running RVV Code
 
 > **Goal of this chapter.** Get every team member running vector code today, on the
-> toolchain you already have. You cannot design hardware for an ISA you have never
+> toolchain one already have. One cannot design hardware for an ISA the team has never
 > programmed.
 >
 > **This chapter is hands-on.** Have a terminal open.
@@ -11,18 +11,18 @@ captured, not illustrative.
 
 ---
 
-## 6.1 Why you must write RVV code before designing RVV hardware
+## 6.1 Why teams must write RVV code before designing RVV hardware
 
 A recurring failure in hardware projects: the RTL team never uses the ISA. They implement
 `vsetvli` from the spec text, get the `rs1 == x0` case wrong, and don't discover it for six
 weeks because no test they wrote exercises it — because they'd never written the stripmine
 loop that depends on it.
 
-Writing the software first gives you:
+Writing the software first gives the implementer:
 
-- **An intuition for what's common.** You will discover that `vsetvli`, `vle`, `vse`, and
-  three arithmetic ops are 90% of real code. That tells you what to optimise.
-- **A golden reference.** Every program you write here becomes a test for your RTL later.
+- **An intuition for what's common.** The team will discover that `vsetvli`, `vle`, `vse`, and
+  three arithmetic ops are 90% of real code. That indicates what to optimise.
+- **A golden reference.** Every program one writes here becomes a test for the RTL later.
 - **Test data.** Spike's commit log from these programs is exactly the co-simulation input
   Chapter 13 needs.
 
@@ -33,19 +33,19 @@ Writing the software first gives you:
 
 ## 6.2 The three simulators, and what each is for
 
-You have three ways to run RVV code, and they are **not** interchangeable. Pick by task.
+There are three ways to run RVV code, and they are **not** interchangeable. Pick by task.
 
-| | **Spike** | **QEMU** | **Your RTL** |
+| | **Spike** | **QEMU** | **The RTL** |
 |---|---|---|---|
-| What it is | The official RISC-V **reference model** | Fast emulator | The thing you're building |
+| What it is | The official RISC-V **reference model** | Fast emulator | The thing one're building |
 | Speed | ~10 MIPS | ~100+ MIPS | ~10 kHz |
 | `printf` | Needs a proxy kernel or bare-metal I/O | **Yes**, user mode, works out of the box | No |
-| Instruction trace | **Yes — `-l --log-commits`** | Awkward | Yes (your own) |
-| Configurable VLEN | Yes, via `_zvl<N>b` in the ISA string | Yes, via `-cpu ...,vlen=N` | Your parameter |
-| **Use it for** | **Golden reference, co-simulation, instruction counts** | **Developing and debugging your C** | Final verification |
+| Instruction trace | **Yes — `-l --log-commits`** | Awkward | Yes (the own) |
+| Configurable VLEN | Yes, via `_zvl<N>b` in the ISA string | Yes, via `-cpu ...,vlen=N` | The parameter |
+| **Use it for** | **Golden reference, co-simulation, instruction counts** | **Developing and debugging the C code** | Final verification |
 
 **The rule:** develop in QEMU because it has `printf`; verify against Spike because it is
-the reference model your hardware must match.
+the reference model the hardware must match.
 
 ### Spike
 
@@ -53,7 +53,7 @@ the reference model your hardware must match.
 # Bare-metal ELF, VLEN = 128
 spike --isa=rv64gcv_zvl128b program.elf
 
-# Same, with a full commit trace -- this is your co-simulation input
+# Same, with a full commit trace -- this is the co-simulation input
 spike --isa=rv64gcv_zvl128b -l --log-commits program.elf
 ```
 
@@ -73,14 +73,14 @@ it explicitly (Chapter 3 §3.3).
 
 ---
 
-## 6.3 Hello, vector — your first program
+## 6.3 Hello, vector — the first program
 
-Three ways to write RVV code, from lowest to highest level. You need to be fluent in the
+Three ways to write RVV code, from lowest to highest level. Teams need to be fluent in the
 first two.
 
 ### Level 1 — Inline assembly
 
-Complete control, nothing hidden. This is how you'll write directed tests for your RTL.
+Complete control, nothing hidden. This is how one'll write directed tests for the RTL.
 
 ```c
 // examples/01-hello-vector/hello_vector.c  (excerpt)
@@ -95,7 +95,7 @@ asm volatile (
 ```
 
 Note the clobber list includes the vector registers and `"memory"`. Omit those and the
-compiler will happily reorder your loads around the assembly block.
+compiler will happily reorder the loads around the assembly block.
 
 Run it:
 
@@ -121,13 +121,13 @@ The example self-checks five things worth knowing about:
 4. a short `vl` touches exactly `vl` elements,
 5. **`vsub.vv v3, v2, v1` computes `v2 - v1`** — the operand-order trap from Chapter 5.
 
-Check 5 is there because that bug is so easy to make. If you write an RTL ALU that computes
+Check 5 is there because that bug is so easy to make. If one writes an RTL ALU that computes
 `vs1 - vs2`, this test catches it immediately.
 
 ### Level 2 — Intrinsics
 
 Named C functions that map one-to-one onto instructions. The register allocator does the
-work; you keep control of the instruction sequence. **This is how you should write your
+work; one keeps control of the instruction sequence. **This is how teams should write the
 benchmark kernels.**
 
 ```c
@@ -157,7 +157,7 @@ Types follow the same pattern: `vint32m1_t`, `vuint8m4_t`, `vfloat32m8_t`,
 first; it is the number of *bits per element position*, chosen so the type is unique.
 
 > **⚠️ Trap — the `__riscv_` prefix.** Intrinsics were renamed in 2023. Older code uses
-> bare `vsetvl_e32m1(...)`; current toolchains require `__riscv_vsetvl_e32m1(...)`. If you
+> bare `vsetvl_e32m1(...)`; current toolchains require `__riscv_vsetvl_e32m1(...)`. If one
 > copy an example from a blog post and get "implicit declaration of function", this is why.
 
 Every intrinsic takes `vl` as its **last argument**. That is not decoration — it is how the
@@ -171,8 +171,8 @@ Write plain C, let GCC vectorise it:
 riscv64-unknown-elf-gcc -march=rv64gcv -O3 kernel.c -c
 ```
 
-This genuinely works — recall from Chapter 1 that GCC auto-vectorised our array-init loop
-without being asked. But **do not rely on it for your benchmarks.** Small source changes
+This genuinely works — recall from Chapter 1 that GCC auto-vectorised the array-init loop
+without being asked. But **do not rely on it for the benchmarks.** Small source changes
 flip vectorisation on and off, making measurements irreproducible. Use `-fopt-info-vec` to
 see what it did:
 
@@ -181,14 +181,14 @@ riscv64-unknown-elf-gcc -march=rv64gcv -O3 -fopt-info-vec kernel.c -c
 ```
 
 Autovectorisation *is* useful for one thing: generating diverse RVV instruction sequences to
-stress your RTL. Compile a pile of ordinary C at `-O3 -march=rv64gcv` and you get free test
+stress the RTL. Compile a pile of ordinary C at `-O3 -march=rv64gcv` and one gets free test
 cases.
 
 ---
 
 ## 6.4 Reading the generated assembly
 
-The single most useful habit. `-S` gives you assembly; compare scalar and vector side by
+The single most useful habit. `-S` gives the implementer assembly; compare scalar and vector side by
 side:
 
 ```
@@ -222,12 +222,12 @@ saxpy_rvv:
         ret
 ```
 
-Things to notice, and to point out to your mentees:
+Things to notice, and to point out to the implementerr mentees:
 
 - The `vsetvli` is **inside** the loop. It must be — `vl` shrinks on the final pass.
 - `slli a4, a5, 2` converts the returned `vl` into a byte offset (`vl × 4`). The pointer
   increment is **data-dependent on `vl`**, which is exactly why the code is VLEN-agnostic.
-- There is **no remainder loop**. Compare with any SSE/NEON kernel you've seen.
+- There is **no remainder loop**. Compare with any SSE/NEON kernel one've seen.
 - Four of the ten instructions are scalar bookkeeping. At large `vl` they're negligible;
   at `vl = 2` they dominate. That's Exercise 1.5.
 
@@ -237,7 +237,7 @@ To disassemble a built binary and see real encodings:
 riscv64-unknown-elf-objdump -d program.elf | less
 ```
 
-Keep this handy: it is how you check every table in Chapter 5, and how you'll debug your
+Keep this handy: it is how one checks every table in Chapter 5, and how one'll debug the
 own decoder.
 
 ---
@@ -329,13 +329,13 @@ SAXPY, N = 1024 elements -- committed instructions (Spike)
 
 > **⚠️ Trap — matched baselines.** The harness measures the *kernel*, so it subtracts a
 > baseline build with the kernel call removed. **The baseline must be compiled with the
-> same `-march` as the thing it's baselining.** We initially used one `rv64gc` baseline for
-> everything and got *negative* kernel counts, because GCC had auto-vectorised the
+> same `-march` as the thing it's baselining.** An early version used one `rv64gc` baseline for
+> everything and produced *negative* kernel counts, because GCC had auto-vectorised the
 > harness's own initialisation loop in the `rv64gcv` build, making the full program cheaper
 > than its "baseline".
 >
 > The same trap applies to the self-check loop: if it runs only in the kernel builds and
-> not the baseline, you charge the check to the kernel. Ours runs in all three builds
+> not the baseline, one charge the check to the kernel. The harness here runs the check in all three builds
 > against a per-kernel expected value, so it cancels.
 >
 > This is not a toy concern. It is the single easiest way to publish a wrong speedup
@@ -346,7 +346,7 @@ SAXPY, N = 1024 elements -- committed instructions (Spike)
 
 ## 6.7 Generating a golden trace for co-simulation
 
-This is the technique your whole verification strategy rests on, so learn it now.
+This is the technique the whole verification strategy rests on, so learn it now.
 
 ```bash
 spike --isa=rv64gcv_zvl128b -l --log-commits program.elf 2>&1 | grep '^core   0:'
@@ -364,22 +364,22 @@ core   0: 0x0000000080000026 (0x020e6127) vse32.v v2, (t3)
 Each line gives the PC, the **raw instruction word**, and the disassembly. With
 `--log-commits`, Spike also emits the architectural state each instruction changed.
 
-This is gold. In Chapter 13 you will:
+This is gold. In Chapter 13 the team will:
 1. run a test program on Spike, capturing this trace;
-2. run the same program on your RTL, capturing your own trace;
+2. run the same program on the RTL, capturing the own trace;
 3. diff them.
 
-The first instruction where they differ is your bug, with the PC that caused it. That is
+The first instruction where they differ is the bug, with the PC that caused it. That is
 enormously more useful than "the final answer is wrong".
 
-> **🎯 Milestone hook.** Build the trace-comparison script at **M2**, before you have
+> **🎯 Milestone hook.** Build the trace-comparison script at **M2**, before the team has
 > anything substantial to test with it. Chapter 13 §13.4 gives the format.
 
 ---
 
 ## 6.8 The `mstatus.VS` gotcha, again
 
-Because it will happen to you:
+Because it will happen to the implementer:
 
 ```
 Symptom:  bare-metal program hangs forever, or Spike times out with no output.
@@ -388,8 +388,8 @@ Cause:    mstatus.VS = Off, so the first vector instruction (usually vsetvli)
 Fix:      li t0, (1 << 9); csrs mstatus, t0     # before ANY vector instruction
 ```
 
-This is handled for you in `examples/common/crt.S`. When you write your own startup code,
-copy it. When your RTL is running and a test hangs at the first `vsetvli`, check this first.
+This is handled for the implementer in `examples/common/crt.S`. When one writes custom startup code,
+copy it. When the RTL is running and a test hangs at the first `vsetvli`, check this first.
 
 ---
 
@@ -422,10 +422,10 @@ qemu-riscv64 -cpu rv64,v=true,vlen=128,elen=64,vext_spec=v1.0 ./prog.elf
 riscv64-unknown-elf-gcc -march=rv64gcv -O3 -fopt-info-vec prog.c -c
 ```
 
-Two flags worth explaining, since both cost us time:
+Two flags worth explaining, since both reliably cost time:
 
-- **`-mcmodel=medany`** is required for bare metal linked at `0x80000000`. Without it you
-  get `relocation truncated to fit: R_RISCV_HI20`.
+- **`-mcmodel=medany`** is required for bare metal linked at `0x80000000`. Without it the link
+  fails with `relocation truncated to fit: R_RISCV_HI20`.
 - **`-fno-tree-loop-distribute-patterns`** stops GCC turning an array-init loop into a call
   to `memset()`, which doesn't exist in a `-nostdlib` build. Without it: `undefined
   reference to memset`.
@@ -439,14 +439,14 @@ Both are already in `examples/common/common.mk`.
 Everyone on the team completes all of these. Mentors verify.
 
 **6.1** Build and run all three examples. Paste the output of `make run-all` from examples
-01 and 03 into your project log.
+01 and 03 into the project log.
 
 **6.2** Modify example 01 to add a sixth check: prove that `vmv.v.i v1, 7` sets **all `vl`
 elements** to 7 and leaves the tail alone.
 
 **6.3** Write, from scratch, a program that computes the dot product of two 100-element
 `int32` arrays using `vmul` and `vredsum`. Verify against a scalar loop. *(This is harder
-than it looks — you need to accumulate across stripmine passes.)*
+than it looks — teams need to accumulate across stripmine passes.)*
 
 **6.4** Take the dot product from 6.3 and capture a Spike commit trace. How many
 instructions? How many are vector? What fraction is `vsetvli`?
@@ -461,13 +461,13 @@ differ from the hand-written intrinsic version?
 
 **6.7 (mentors)** Deliberately introduce the `vs1`/`vs2` swap bug into a copy of example
 01's check 5 by changing `vsub.vv v3, v2, v1` to `vsub.vv v3, v1, v2`. Confirm the test
-catches it. This is the test you will hand to the RTL team.
+catches it. This is the test the team will hand to the RTL team.
 
 ---
 
 ## Key takeaways
 
-- **Write RVV software before designing RVV hardware.** Your programs become your tests.
+- **Write RVV software before designing RVV hardware.** The programs become the tests.
 - **Spike** = golden reference and traces. **QEMU** = fast, has `printf`, use it for
   development. Always pass `vext_spec=v1.0` to QEMU.
 - Three ways to write RVV: **inline asm** (tests), **intrinsics** (benchmarks),
@@ -476,7 +476,7 @@ catches it. This is the test you will hand to the RTL team.
   The `__riscv_` prefix is mandatory on current toolchains.
 - **Read the generated assembly.** The `vsetvli` inside the loop and the `vl`-scaled
   pointer bump are the whole VLA mechanism, visible in ten instructions.
-- Spike's `-l --log-commits` gives PC + instruction word + state change. **This is your
+- Spike's `-l --log-commits` gives PC + instruction word + state change. **This is the
   co-simulation input.** Build the diff script early.
 - Watch for: `mstatus.VS` off, `-mcmodel=medany`, `-fno-tree-loop-distribute-patterns`,
   and **mismatched baselines** in measurements.

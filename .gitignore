@@ -1,0 +1,27 @@
+# Build artifacts
+*.elf
+*.o
+*.a
+*.log
+obj_dir/
+build/
+verif/build/
+
+# Simulation output
+*.vcd
+*.fst
+*.wlf
+transcript
+
+# Results (regenerate with scripts/)
+results/
+
+# Python
+__pycache__/
+*.pyc
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store

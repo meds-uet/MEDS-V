@@ -1,7 +1,7 @@
 # Chapter 4 — The RVV Programmer's Model
 
-> **This is the most important chapter in the book.** Everything your hardware must do is
-> defined here. Read it twice. Do the exercises. Do not start Chapter 8 until your whole
+> **This is the most important chapter in the book.** Everything the hardware must do is
+> defined here. Read it twice. Do the exercises. Do not start Chapter 8 until the whole
 > team can reproduce the `vtype` layout and the LMUL table from memory.
 
 Every table in this chapter has been verified against the ratified RVV 1.0 specification
@@ -43,25 +43,25 @@ lean.
 > | `0xC21` | UR**O** | `vtype` | Current element width, register grouping, and policies |
 > | `0xC22` | UR**O** | `vlenb` | **VLEN/8** — the vector register size in bytes. Read-only constant. |
 
-Two things to notice, both of which matter for your RTL:
+Two things to notice, both of which matter for the RTL:
 
-- **`vl` and `vtype` are read-only via the CSR instructions.** You cannot `csrw vl, t0`.
+- **`vl` and `vtype` are read-only via the CSR instructions.** One cannot `csrw vl, t0`.
   They are written *only* by the `vsetvl{i}` family. This is a deliberate simplification:
   it means the two must always be mutually consistent, and only one instruction needs to
   enforce that.
-- **`vlenb` is how software discovers your VLEN.** It is a hardwired constant in your
+- **`vlenb` is how software discovers the VLEN.** It is a hardwired constant in the
   design. A single `csrr t0, vlenb` and the program knows the machine.
 
-### `mstatus.VS` — the enable bit that will waste your afternoon
+### `mstatus.VS` — the enable bit that will waste the afternoon
 
 > **⚠️ Trap — the single most common "my vector code doesn't work" bug.**
 > The vector unit powers up **disabled**. `mstatus.VS[1:0]` (bits **10:9** on RV64) starts
 > at `00` = *Off*, and **every vector instruction, including `vsetvli`, traps as an illegal
-> instruction** until you enable it.
+> instruction** until one enable it.
 >
-> We hit this ourselves while preparing the examples for this book: a bare-metal test
+> This surfaced while preparing the examples for this book: a bare-metal test
 > looped forever with no output, because the very first `vsetvli` was trapping into a
-> non-existent handler. The fix is two instructions in your startup code:
+> non-existent handler. The fix is two instructions in the startup code:
 >
 > ```asm
 > # verified: required before any vector instruction in M-mode bare-metal code
@@ -69,7 +69,7 @@ Two things to notice, both of which matter for your RTL:
 >     csrs mstatus, t0
 > ```
 
-The `VS` field has four states, and your hardware must implement the transitions:
+The `VS` field has four states, and the hardware must implement the transitions:
 
 | `VS` | Name | Meaning |
 |---|---|---|
@@ -78,14 +78,14 @@ The `VS` field has four states, and your hardware must implement the transitions
 | `10` | Clean | Enabled; state matches what's saved in memory. |
 | `11` | Dirty | Enabled; state has been modified since last save. |
 
-The point of Clean/Dirty is **context switching**. Your VRF at VLEN=512 is 2 KiB of state.
+The point of Clean/Dirty is **context switching**. The VRF at VLEN=512 is 2 KiB of state.
 An OS that saved and restored that on every context switch would be crippled. So the
 hardware tracks whether the vector state was *touched*: any instruction that writes vector
 state sets `VS = Dirty`, and the OS only saves the VRF if it finds `Dirty`. Programs that
 never use vectors cost nothing.
 
-> **🎯 Milestone hook.** For a bare-metal MEDS-V (M0–M5) you can implement `VS` as a
-> two-state enable and hardwire Dirty. Full Clean/Dirty tracking only matters when you run
+> **🎯 Milestone hook.** For a bare-metal MEDS-V (M0–M5) one can implement `VS` as a
+> two-state enable and hardwire Dirty. Full Clean/Dirty tracking only matters when one runs
 > an OS — Chapter 16. But implement the *trap on disabled* behaviour early, because the
 > architectural tests check it.
 
@@ -103,7 +103,7 @@ and RVV becomes easy; confuse them and nothing will make sense.
 | **SEW** | **Selected** element width, *right now* | **Software**, via `vtype` | 8, 16, 32, 64 |
 | **LMUL** | Register **group multiplier**, right now | **Software**, via `vtype` | 1/8, 1/4, 1/2, 1, 2, 4, 8 |
 
-**VLEN and ELEN are properties of your chip.** You choose them in `meds_v_pkg.sv` and they
+**VLEN and ELEN are properties of the design.** One chooses them in `meds_v_pkg.sv` and they
 never change at runtime.
 
 **SEW and LMUL are properties of the current moment.** They live in the `vtype` CSR and a
@@ -135,7 +135,7 @@ Worked examples — build the intuition now:
 > hardware *could* do. `vl` is how many it *will* do, and is set per-loop-iteration by
 > `vsetvli`. `vl ≤ VLMAX` always.
 
-### Constraints you must enforce
+### Constraints teams must enforce
 
 > **📐 Spec box.**
 > - `SEW ≤ ELEN`. Asking for `e64` on an ELEN=32 machine is an unsupported configuration.
@@ -149,7 +149,7 @@ Worked examples — build the intuition now:
 
 ## 4.3 `vtype` — the configuration register
 
-This is the register your control unit revolves around.
+This is the register the control unit revolves around.
 
 > **📐 Spec box — `vtype` layout.** Verified against RVV 1.0 §3.4.
 >
@@ -231,7 +231,7 @@ first register of a group**:
 ```
 
 > **📐 Spec box.** With LMUL = *n* > 1, a vector register operand must be a multiple of
-> *n*. Violating this is a **reserved encoding** — your hardware should raise an illegal
+> *n*. Violating this is a **reserved encoding** — the hardware should raise an illegal
 > instruction.
 
 This is easy RTL — check the low `log2(LMUL)` bits of each register specifier are zero —
@@ -239,7 +239,7 @@ and it is one of the first things the architectural tests will poke at.
 
 ### LMUL < 1: fractional groups
 
-With LMUL = 1/2, each register holds only half as many elements as it could. Why would you
+With LMUL = 1/2, each register holds only half as many elements as it could. Why would one
 ever want that? Chapter 3 §3.4 gave the answer: **mixed-width arithmetic.**
 
 ```
@@ -257,7 +257,7 @@ scales with SEW**. So a widening instruction from SEW=8/LMUL=1/4 produces SEW=16
 Fractional LMUL is what lets the *source* of a widening chain start small enough that the
 *destination* doesn't overflow the register file.
 
-> **🔧 Exercise 4.1.** You have 32 elements of 8-bit data at VLEN=256 and want to accumulate
+> **🔧 Exercise 4.1.** One has 32 elements of 8-bit data at VLEN=256 and want to accumulate
 > into 32-bit values. What LMUL for the source? What LMUL for the destination? Check that
 > both give VLMAX = 32.
 
@@ -365,7 +365,7 @@ say `vl = 5` then `vl = 4` instead, keeping both passes efficient.
 > **🎯 Implementation guidance.** MEDS-V should take the **simple, legal** option:
 > `vl = min(AVL, VLMAX)`. It satisfies every rule above (case 2 is permitted to return
 > VLMAX, since `VLMAX ≥ ⌈AVL/2⌉` whenever `AVL < 2×VLMAX`). It is one comparator and one
-> mux. Do not implement load balancing in v1; note it in your report as future work.
+> mux. Do not implement load balancing in v1; note it in the report as future work.
 
 Here is that rule observed in the wild — the same binary, two machines:
 
@@ -396,7 +396,7 @@ specifiers rather than by a separate opcode:
 
 That last row is heavily used and easy to miss. `vsetvli x0, x0, e16, m2, ta, ma` means
 *"change the element width and grouping but keep processing the same number of elements."*
-It is exactly what mixed-width code needs, and your decoder must special-case it.
+It is exactly what mixed-width code needs, and the decoder must special-case it.
 
 > **⚠️ Trap.** `rs1 == x0` does **not** mean "AVL = 0". It means "AVL = infinity" (row 3)
 > or "keep current `vl`" (row 4). Reading `x0` as the value zero here is a classic
@@ -423,7 +423,7 @@ This two-stage design is deliberate. It lets software *probe* the machine's capa
     bltz    t1, no_e64_support        # vill is the sign bit — one branch to test it
 ```
 
-Configurations you must reject with `vill` in MEDS-V (`ELEN=32`):
+Configurations teams must reject with `vill` in MEDS-V (`ELEN=32`):
 - any `vsew` requesting SEW > ELEN (so `e64` on a 32-bit ELEN machine),
 - `vsew = 1xx` (reserved),
 - `vlmul = 100` (reserved),
@@ -451,7 +451,7 @@ With LMUL > 1, several registers form one logical vector. Elements are laid out
 Within a register, element *i* occupies bits `[SEW×(i+1)-1 : SEW×i]` — little-endian
 element order, lowest element in the low bits.
 
-**Implementation note.** This layout is why your VRF addressing is so simple: for element
+**Implementation note.** This layout is why the VRF addressing is so simple: for element
 index *e*, the register is `base + (e × SEW) / VLEN` and the bit offset within it is
 `(e × SEW) mod VLEN`. Both are shifts and masks when SEW and VLEN are powers of two — which
 they always are.
@@ -498,11 +498,11 @@ This trips up everyone, so be careful:
                ON  OFF  ON  ON
 ```
 
-The mask bit position does **not** scale with SEW. At SEW=8 with 16 elements, you use bits
-15:0. At SEW=32 with 4 elements, you use bits 3:0. Same register, different number of
+The mask bit position does **not** scale with SEW. At SEW=8 with 16 elements, one uses bits
+15:0. At SEW=32 with 4 elements, one uses bits 3:0. Same register, different number of
 meaningful bits.
 
-**Why this matters to you:** it means the mask read path is *narrow*. You need at most
+**Why this matters to the implementer:** it means the mask read path is *narrow*. Teams need at most
 VLMAX bits — never VLEN bits — from `v0`, and always from the bottom. In a multi-lane
 design, lane *l* needs mask bits *l*, *l+L*, *l+2L*, … which is a fixed strided extraction,
 not a crossbar.
@@ -513,7 +513,7 @@ not a crossbar.
 > `v0`**, unless the destination is itself being written with a mask value. Violating this
 > is a reserved encoding.
 
-Sensible: if you overwrote `v0` while still reading it as a mask, the result would depend
+Sensible: if one overwrote `v0` while still reading it as a mask, the result would depend
 on element order.
 
 ---
@@ -546,29 +546,29 @@ Chapter 2 §2.5 introduced prestart / body / tail. Now the exact rules.
 > Exception: **mask destination tail elements are always treated as tail-agnostic**,
 > regardless of `vta`.
 
-### Why "agnostic" exists, and what it buys your hardware
+### Why "agnostic" exists, and what it buys the hardware
 
 This is the most implementation-relevant paragraph in the chapter.
 
-**Undisturbed** means: *"preserve the bits I am not writing."* For your VRF, that is a
-**read-modify-write**. To write elements 0–5 of `v3` while preserving 6–7, you must either
+**Undisturbed** means: *"preserve the bits I am not writing."* For the VRF, that is a
+**read-modify-write**. To write elements 0–5 of `v3` while preserving 6–7, teams must either
 
 - read `v3`, merge, write back — costing an extra read port and adding a **false
   dependency on the destination register** (the instruction now *reads* `v3` even though it
   logically only writes it), or
 - have per-element write enables on the VRF write port.
 
-The second is much better and is what you should build: byte-granular (or element-granular)
+The second is much better and is what teams should build: byte-granular (or element-granular)
 write enables. But it still means the write-enable mask must be computed from `vl`, the
 mask, *and* the policy.
 
-**Agnostic** means: *"I don't care."* Your hardware can write all-1s across the tail, or
+**Agnostic** means: *"I don't care."* The hardware can write all-1s across the tail, or
 leave it, whichever falls out of the datapath naturally.
 
 > **🎯 Implementation guidance for MEDS-V.**
 > Implement **element-granular write enables** in the VRF from day one (M3). With those,
-> supporting undisturbed is nearly free — you just deassert write-enable for tail and
-> inactive elements — and you avoid the false-dependency problem entirely.
+> supporting undisturbed is nearly free — one just deassert write-enable for tail and
+> inactive elements — and one avoid the false-dependency problem entirely.
 >
 > Concretely, the write-enable for element *i* is:
 > ```systemverilog
@@ -577,10 +577,10 @@ leave it, whichever falls out of the datapath naturally.
 > ```
 > That single line implements both policies in their undisturbed form, which is **always a
 > legal implementation of agnostic too** (agnostic permits "retain previous values"). So
-> you get full `vta`/`vma` compliance without a policy mux.
+> one gets full `vta`/`vma` compliance without a policy mux.
 >
-> This is a genuinely useful trick: **build the undisturbed datapath and you are
-> automatically compliant with both policies.** Note it in your report as a deliberate
+> This is a genuinely useful trick: **building the undisturbed datapath yields
+> automatic compliance with both policies.** Note it in the report as a deliberate
 > choice — it costs a little performance on machines that would prefer full-width writes,
 > and buys simplicity and compliance.
 
@@ -596,16 +596,16 @@ middle, the machine should not have to redo the whole thing.
 > trap mid-instruction, hardware writes the failing element index into `vstart` so the
 > instruction can be restarted.
 
-For MEDS-V v1 in a bare-metal setting, `vstart` is almost always zero. **But you must still
+For MEDS-V v1 in a bare-metal setting, `vstart` is almost always zero. **But teams must still
 implement it**, because:
 
 1. the architectural tests write non-zero `vstart` and check the behaviour,
-2. it is only a comparator in the write-enable expression you already wrote in §4.8,
-3. "we support precise, restartable vector instructions" is a real claim for your report.
+2. it is only a comparator in the write-enable expression the team already wrote in §4.8,
+3. "the team support precise, restartable vector instructions" is a real claim for the report.
 
 > **🎯 Implementation guidance.** Implement `vstart` as an architectural CSR that gates
 > element write-enable, and reset it to 0 at instruction retire. Do **not** implement
-> mid-instruction trap reporting in v1 — if your VLSU can fault, take the simpler route of
+> mid-instruction trap reporting in v1 — if the VLSU can fault, take the simpler route of
 > making faults precise at instruction granularity and document the limitation.
 
 ---
@@ -658,8 +658,8 @@ spec permits this only in cases where element order cannot corrupt the result:
 > instruction.* Any violation is a **reserved encoding.**
 
 > **🎯 Implementation guidance.** These rules exist so a simple in-order machine can
-> process elements low-to-high and never overwrite a source it still needs. You do not have
-> to *exploit* them — but you should **detect violations and raise illegal-instruction**,
+> process elements low-to-high and never overwrite a source it still needs. One does not have
+> to *exploit* them — but teams should **detect violations and raise illegal-instruction**,
 > because the compliance tests check it. That is a handful of comparators in the decoder.
 > Put it on the M2 checklist.
 
@@ -667,7 +667,7 @@ spec permits this only in cases where element order cannot corrupt the result:
 
 ## 4.11 The complete decode checklist
 
-Everything from this chapter, as the specification your decoder must meet. Print this and
+Everything from this chapter, as the specification the decoder must meet. Print this and
 stick it on the wall.
 
 For every vector instruction, the decoder must:
@@ -695,7 +695,7 @@ LMUL for source and destination; verify both give VLMAX = 32.
 SEW, LMUL, `vta`, `vma`.
 
 **4.3** For VLEN=128, ELEN=32, list every `(vsew, vlmul)` pair that must set `vill`. There
-are more than you think — be systematic.
+are more than one might think — be systematic.
 
 **4.4** Write the `vsetvli` that means "keep the current `vl`, but switch to 16-bit
 elements with LMUL=2, tail-agnostic, mask-agnostic." Assemble it and confirm the encoding.
@@ -714,14 +714,14 @@ M1 deliverable — see Chapter 12.
 
 **4.8 (mentors)** §4.8 claims that building only the undisturbed datapath yields full
 compliance with the agnostic policies. Justify this from the spec text, and identify the
-performance cost you are accepting.
+performance cost that choice accepts.
 
 ---
 
 ## Key takeaways
 
 - State: **32 × VLEN-bit registers**, **7 CSRs**, and **`mstatus.VS`**.
-- `mstatus.VS` starts **Off** — enable it or everything traps. This will bite you.
+- `mstatus.VS` starts **Off** — enable it or everything traps. This will cause trouble.
 - Four parameters: **VLEN, ELEN** (hardware) and **SEW, LMUL** (software, in `vtype`).
   `VLMAX = LMUL × VLEN / SEW`.
 - `vlmul[2:0]` is **signed**: `LMUL = 2^vlmul`, which is why 1/8, 1/4, 1/2 sit at
@@ -733,7 +733,7 @@ performance cost you are accepting.
 - The mask is always **`v0`**, one bit per element at **bit position *i***, independent of
   SEW. `vm` is a single bit in the encoding.
 - **Agnostic policies exist to make hardware cheaper.** Building element-granular write
-  enables gives you compliance with both policies for free.
+  enables gives the implementer compliance with both policies for free.
 - **EEW/EMUL**: operands can be wider or narrower than SEW; EMUL scales to keep the element
   count constant, and out-of-range EMUL is a reserved encoding.
 

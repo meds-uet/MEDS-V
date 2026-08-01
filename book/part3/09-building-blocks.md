@@ -1,18 +1,18 @@
 # Chapter 9 — The Building Blocks
 
 > **Goal of this chapter.** One section per block from the Chapter 8 diagram. Each gives
-> you: what the block does, its interface, its internal structure, the design decisions you
-> must make, and the traps waiting for you.
+> one: what the block does, its interface, its internal structure, the design decisions one
+> must make, and the traps waiting for the implementer.
 >
 > This is a **reference chapter**. Read it once end-to-end for the shape, then return to
-> the section for whichever block you own.
+> the section for whichever block one own.
 
 Each section follows the same template:
 
 > **Job** — one sentence.
 > **Interface** — the ports.
 > **Inside** — the structure.
-> **Decisions** — what you must choose.
+> **Decisions** — what teams must choose.
 > **Traps** — what goes wrong.
 > **Done when** — the exit criterion.
 
@@ -109,7 +109,7 @@ architectural test suite:
 
 > **🎯 Guidance.** Write checks 1–5 in M1. Check 6 is fiddly; write it in M2 alongside the
 > tests that exercise it. But **write it** — "reserved encoding" means the architectural
-> tests will hand you one and expect a trap.
+> tests will hand one one and expect a trap.
 
 ### Decisions
 
@@ -121,10 +121,10 @@ architectural test suite:
 
 ### Done when
 
-- Every one of the ~120 encodings in your subset decodes to the right bundle.
+- Every one of the ~120 encodings in the implemented subset decodes to the right bundle.
 - A directed test sweeps all 2048 `vsetvli` immediates and checks `vill`.
 - Illegal-encoding tests trap for each of checks 1–6.
-- **A random instruction generator** produces 10 000 words; your decoder's `illegal_o`
+- **A random instruction generator** produces 10 000 words; the decoder's `illegal_o`
   agrees with `spike`'s. (This is a very high-value, cheap test.)
 
 ---
@@ -229,9 +229,9 @@ to probe capabilities.
 | Decision | Recommendation |
 |---|---|
 | `vl` width | `$clog2(VLEN)+1` — sized for SEW=8, LMUL=8 (Ch 8 §8.7) |
-| `vl = min(AVL, VLMAX)` or load-balanced? | **`min`.** Legal, one comparator. Note the alternative in your report. |
+| `vl = min(AVL, VLMAX)` or load-balanced? | **`min`.** Legal, one comparator. Note the alternative in the report. |
 | Where does `vstart` live? | Here. The sequencer reads it and it is cleared at retire. |
-| `vxsat`/`vxrm` | Implement the registers even if you skip fixed-point ops — they're cheap and tested. |
+| `vxsat`/`vxrm` | Implement the registers even if one skips fixed-point ops — they're cheap and tested. |
 
 ### Done when
 
@@ -246,7 +246,7 @@ to probe capabilities.
 
 > **Job.** Store 32 × VLEN bits. Deliver operands, absorb results, with element-granular
 > write enables.
-> **Milestone: M2. Difficulty: ●●●○○ (but it's the biggest structure you'll build).**
+> **Milestone: M2. Difficulty: ●●●○○ (but it's the biggest structure one'll build).**
 
 ### Interface
 
@@ -261,7 +261,7 @@ module vrf import meds_v_pkg::*; #(
     input  logic [4:0]               raddr_i [3],
     output logic [VLEN-1:0]          rdata_o [3],
 
-    // one write port with per-ELEMENT enables
+    // one writes port with per-ELEMENT enables
     input  logic                     we_i,
     input  logic [4:0]               waddr_i,
     input  logic [VLEN-1:0]          wdata_i,
@@ -275,20 +275,20 @@ module vrf import meds_v_pkg::*; #(
 Four things to notice, each a deliberate choice:
 
 **Three read ports.** `vs1`, `vs2`, and `vd`. The third is needed for accumulating
-instructions (`vmacc` reads `vd`) and, if you support tail-undisturbed by
-read-modify-write, for merging. If you use byte enables instead (recommended), you can
+instructions (`vmacc` reads `vd`) and, if one support tail-undisturbed by
+read-modify-write, for merging. If one uses byte enables instead (recommended), one can
 sometimes drop to two — but `vmacc` still needs three.
 
 **Byte enables, not element enables.** Byte granularity handles every SEW from 8 up, with
 one uniform mechanism. `wbe_i` is `VLEN/8` bits. This is the single most important
-structural decision in the block: it gives you tails, masking, and `vstart` for free.
+structural decision in the block: it gives the implementer tails, masking, and `vstart` for free.
 
 **A dedicated `v0` port.** The mask always comes from `v0` (Chapter 4 §4.7), so hardwire
 it. No arbitration, no extra addressing.
 
 **Whole-VLEN read/write ports at this level.** In a multi-lane design the VRF is physically
 *sliced* across lanes, but presenting a VLEN-wide interface at the top keeps the module
-boundary clean and lets you change the internal organisation later.
+boundary clean and lets an implementation change the internal organisation later.
 
 ### Inside — organisation options
 
@@ -314,12 +314,12 @@ what makes lane scaling physical rather than notional.
    Bank 2: v2, v6, v10, ... v30
    Bank 3: v3, v7, v11, ... v31
 ```
-Each bank is single-ported SRAM; you get multiple "ports" by reading different banks
-simultaneously. Cheap in area, but **you must handle bank conflicts** — `vadd.vv v1, v5, v9`
+Each bank is single-ported SRAM; one gets multiple "ports" by reading different banks
+simultaneously. Cheap in area, but **teams must handle bank conflicts** — `vadd.vv v1, v5, v9`
 hits bank 1 three times. That means a conflict detector and a stall, in the sequencer.
 
-> **🎯 Guidance.** Build **Option 1** for M2. Move to **Option 2** when you add lanes in M6.
-> Consider Option 3 only if you are taping out or targeting a large FPGA where flops are
+> **🎯 Guidance.** Build **Option 1** for M2. Move to **Option 2** when one adds lanes in M6.
+> Consider Option 3 only when taping out, or targeting a large FPGA where flops are
 > the constraint. Banking is a real project; do not start there.
 
 ### Register grouping (LMUL > 1)
@@ -352,7 +352,7 @@ modules simpler.
 - Byte-enable test: write with a sparse enable pattern, confirm untouched bytes are
   preserved.
 - `v0` read port returns the same data as a normal read of `v0`.
-- Reads and writes to the same register in the same cycle behave as specified (you choose
+- Reads and writes to the same register in the same cycle behave as specified (one chooses
   read-old or read-new — **document it**).
 
 ---
@@ -385,7 +385,7 @@ The interesting problem: one 32-bit datapath must behave as 1×32, 2×16, or 4×
 adders, depending on SEW.
 
 The trick is **carry gating**. A 32-bit ripple/carry-select adder becomes four independent
-8-bit adders if you break the carry chain at byte boundaries:
+8-bit adders if one break the carry chain at byte boundaries:
 
 ```
    SEW = 32:   [ b3 ][ b2 ][ b1 ][ b0 ]      carries propagate: ●──●──●──●
@@ -406,7 +406,7 @@ The trick is **carry gating**. A 32-bit ripple/carry-select adder becomes four i
   end
 ```
 
-Costs roughly 20% more logic than a plain 32-bit adder, and gives you 4× the throughput on
+Costs roughly 20% more logic than a plain 32-bit adder, and gives the implementer 4× the throughput on
 `int8` data. Worth it, and it is a nice, self-contained mentee task.
 
 > **🎯 Guidance for M3.** If segmented arithmetic feels like too much at first, build an
@@ -539,7 +539,7 @@ at LMUL=8 writes `v0`–`v7`.
 ```
 
 > **⚠️ Trap — the `v0` mask dependency.** A masked instruction reads `v0`. If a previous
-> instruction is still writing `v0` (very common — comparisons write masks), you have a RAW
+> instruction is still writing `v0` (very common — comparisons write masks), the team has a RAW
 > hazard on `v0` that is *invisible* in the `vs1`/`vs2` fields. The `!uop_i.vm && busy_q[0]`
 > term above catches it. Teams forget this constantly, and the symptom is
 > intermittently-wrong masked results that depend on timing.
@@ -639,13 +639,13 @@ Write these on a card and keep them visible:
 5. **Byte counting.** `vl` elements, not VLEN bits (Ch 8 §8.6).
 6. **Ordering.** Vector stores vs. scalar loads (Ch 8 §8.4).
 7. **Exceptions.** A fault partway through must report the element index.
-8. **Backpressure.** Memory can stall at any point; your pipeline must hold state.
+8. **Backpressure.** Memory can stall at any point; the pipeline must hold state.
 
 ### Decisions
 
 | Decision | Recommendation for v1 |
 |---|---|
-| Memory port width | **VLEN bits** if you can afford it — makes unit-stride one request |
+| Memory port width | **VLEN bits** if one can afford it — makes unit-stride one request |
 | Coalescing | **Yes for unit-stride** (the 90% case). Strided: one request per element. |
 | Alignment | **Require natural EEW alignment in v1**; trap otherwise. Document it. Full unaligned support is a large sub-project. |
 | Indexed | **Defer** |
@@ -654,7 +654,7 @@ Write these on a card and keep them visible:
 
 > **🎯 The single most valuable simplification.** Make the memory port **VLEN bits wide**
 > and require natural alignment. A unit-stride access becomes one transaction with a byte
-> mask, and blocks 2 and 3 above nearly vanish. You lose generality; you gain a working
+> mask, and blocks 2 and 3 above nearly vanish. One loses generality; one gain a working
 > VLSU in M4 instead of M7. **Write the limitation into Appendix E and measure its cost in
 > Chapter 15.**
 
@@ -694,7 +694,7 @@ travel back over the `vec_resp` interface of Chapter 8 §8.4.
 ### Traps
 
 > **⚠️ Mask bit position does not scale with SEW.** Element *i*'s mask bit is at bit *i*,
-> always (Ch 4 §4.7). At SEW=8 you use bits 15:0 of `v0`; at SEW=32, bits 3:0. Same
+> always (Ch 4 §4.7). At SEW=8 one uses bits 15:0 of `v0`; at SEW=32, bits 3:0. Same
 > register.
 
 > **⚠️ Mask destination tails are *always* agnostic**, regardless of `vta`. A comparison
@@ -740,8 +740,8 @@ Two implementations:
 wrong.
 
 > **🎯 Build serial first and measure it.** Reductions are a small fraction of dynamic
-> instructions in your benchmarks; the tree is an optimisation with a measurable but modest
-> payoff. "We implemented serial reduction at `vl` cycles and estimate a tree would save
+> instructions in the benchmarks; the tree is an optimisation with a measurable but modest
+> payoff. "The team implemented serial reduction at `vl` cycles and estimate a tree would save
 > X%" is a perfectly good report result.
 
 ### Slides
@@ -780,7 +780,7 @@ element 0 routed to `vec_resp_data` — but on the critical path of every reduct
 
 ## 9.9 Putting it together: the build order
 
-The dependency graph tells you what must exist before what:
+The dependency graph indicates what must exist before what:
 
 ```
    ① Decoder ──┐
@@ -797,7 +797,7 @@ The dependency graph tells you what must exist before what:
 
 Which gives the milestone order of Chapter 11:
 
-| Milestone | Blocks | You can then... |
+| Milestone | Blocks | One can then... |
 |---|---|---|
 | M1 | ①, ② | Decode any instruction; execute `vsetvli` |
 | M2 | ④ | Store and retrieve vectors |
@@ -807,7 +807,7 @@ Which gives the milestone order of Chapter 11:
 | M6 | — | Optimise: more lanes, chaining, tree reduction |
 | M7 | — | Measure, compare, write up |
 
-> **⚠️ Note what M3 gives you: a working datapath with *no memory*.** Drive it from a
+> **⚠️ Note what M3 gives the implementer: a working datapath with *no memory*.** Drive it from a
 > testbench that preloads the VRF directly. This is deliberate — it means the sequencer and
 > lanes are fully verified *before* the VLSU (the hardest block) can confuse the picture.
 > Do not skip this step to "save time"; debugging a broken sequencer through a broken VLSU
@@ -833,11 +833,11 @@ it for SEW = 8, 16, 32 at VLEN = 128.
 list the memory requests and the byte lanes each contributes.
 
 **9.6 (design)** §9.6 recommends requiring natural alignment in v1. Estimate what fraction
-of accesses in your Chapter 14 benchmarks would be naturally aligned. Is the simplification
+of accesses in the C codehapter 14 benchmarks would be naturally aligned. Is the simplification
 safe?
 
 **9.7 (mentors)** Assign owners to all eight blocks. For each, write the "Done when"
-criteria into your issue tracker as a checklist. These are your acceptance tests.
+criteria into the issue tracker as a checklist. These are the acceptance tests.
 
 ---
 
@@ -861,7 +861,7 @@ criteria into your issue tracker as a checklist. These are your acceptance tests
   of SEW.
 - **Reduction/permute:** serial reduction and a slide *ring* in v1; defer `vrgather` and
   `vcompress`.
-- **M3 gives you a working datapath with no memory.** Verify it there before adding the
+- **M3 gives the implementer a working datapath with no memory.** Verify it there before adding the
   VLSU.
 
 ---

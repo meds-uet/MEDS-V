@@ -1,13 +1,13 @@
 # Chapter 7 — Vector-Length-Agnostic Programming
 
 > **Goal of this chapter.** Master the stripmine idiom and the patterns built on it. This
-> is a short chapter about one idea — but it is *the* idea, and your hardware exists to
+> is a short chapter about one idea — but it is *the* idea, and the hardware exists to
 > support it.
 
 Why does a hardware team need a chapter on a software pattern? Because **the pattern
-defines the hardware's contract.** Every requirement on your `vsetvli` implementation, your
-`vl` handling, and your tail policy comes from making these loops work. If you understand
-the loops, the hardware requirements are obvious. If you don't, they look arbitrary.
+defines the hardware's contract.** Every requirement on the teamr `vsetvli` implementation, the
+`vl` handling, and the tail policy comes from making these loops work. If one understand
+the loops, the hardware requirements are obvious. If one doesn't, they look arbitrary.
 
 ---
 
@@ -17,7 +17,7 @@ Here it is, the canonical form. Memorise it.
 
 ```c
 for (size_t vl; n > 0; n -= vl, ptr += vl) {
-    vl = __riscv_vsetvl_e32m1(n);      // ask: how many can you do?
+    vl = __riscv_vsetvl_e32m1(n);      // ask: how many can one does?
     /* ... process vl elements ... */
 }
 ```
@@ -37,12 +37,12 @@ Three properties make this work, and each is a hardware requirement:
 1. **`vsetvli` returns `vl`.** Software must be *told* how many elements it got. This is
    why `vsetvli` writes `rd` (Chapter 4 §4.4).
 2. **`vl > 0` whenever `AVL > 0`.** Otherwise the loop never terminates. This is a
-   spec guarantee your hardware must honour — `vl = 0` if and only if `AVL = 0`.
+   spec guarantee the hardware must honour — `vl = 0` if and only if `AVL = 0`.
 3. **Every operation in the body respects `vl`.** Loads load `vl` elements; stores store
    `vl`; arithmetic computes `vl`. The tail is untouched.
 
-> **⚠️ If your hardware ever returns `vl = 0` for a non-zero AVL, every stripmine loop in
-> existence hangs forever.** Put this in your directed tests at M2. It is a one-line bug
+> **⚠️ If the hardware ever returns `vl = 0` for a non-zero AVL, every stripmine loop in
+> existence hangs forever.** Put this in the directed tests at M2. It is a one-line bug
 > with a catastrophic, hard-to-debug symptom.
 
 ### The general shape, in assembly
@@ -63,7 +63,7 @@ loop:
 
 Nine instructions of scaffolding. Note `slli t1, t0, 2`: the pointer advance is
 **computed from the returned `vl`**, never from a constant. That single dependency is what
-makes the code VLEN-agnostic. Any time you see a hard-coded element count in supposedly-VLA
+makes the code VLEN-agnostic. Any time one sees a hard-coded element count in supposedly-VLA
 code, it's a bug.
 
 ---
@@ -90,7 +90,7 @@ of every kernel and picks one with `cpuid`.
 ## 7.3 Pattern: reductions across passes
 
 Stripmining is easy when each element is independent. Reductions are the first case where
-you must think.
+teams must think.
 
 **Wrong** — resets the accumulator every pass:
 ```c
@@ -103,7 +103,7 @@ for (size_t vl; n > 0; n -= vl, x += vl) {
 ```
 
 **Right** — carry the accumulator across passes. Recall from Chapter 5 §5.7 that
-`vredsum.vs` takes its initial value from element 0 of `vs1`, which is exactly the hook you
+`vredsum.vs` takes its initial value from element 0 of `vs1`, which is exactly the hook one
 need:
 
 ```c
@@ -124,10 +124,10 @@ int32_t sum_rvv(const int32_t *x, size_t n) {
 The accumulator lives in element 0 of a vector register for the whole loop. One
 `vmv.x.s` at the very end moves it to a scalar register. **No scalar round-trip per
 pass** — which matters, because a vector-to-scalar move is a synchronisation point that
-drains your pipeline.
+drains the pipeline.
 
 > **🎯 Hardware consequence.** This idiom means `vmv.x.s` and `vredsum.vs` sit on the
-> critical path of every reduction kernel. Make sure your implementation of "read element 0
+> critical path of every reduction kernel. Make sure the implementation of "read element 0
 > of a vector register into a scalar register" is not accidentally expensive.
 
 ### The faster variant
@@ -162,11 +162,11 @@ exactly one cross-lane reduction at the end.
 > **This is the clearest practical example of why the tail policy exists and why it is not
 > a formality.** It is also a direct argument for Chapter 4 §4.8's recommendation: build
 > element-granular write enables and implement tails as undisturbed, and this code is
-> correct on your hardware. Build a machine that blasts 1s into agnostic tails, and this
-> perfectly legal program silently produces wrong answers on your chip and right answers on
+> correct on the hardware. Build a machine that blasts 1s into agnostic tails, and this
+> perfectly legal program silently produces wrong answers on the design and right answers on
 > Spike.
 >
-> **Put this kernel in your test suite.** It is the best single test of tail handling you
+> **Put this kernel in the test suite.** It is the best single test of tail handling one
 > can write.
 
 ---
@@ -188,7 +188,7 @@ void threshold_rvv(const int32_t *x, int32_t *y, size_t n, int32_t t) {
 }
 ```
 
-Two ways to use a mask, and the difference matters for your hardware:
+Two ways to use a mask, and the difference matters for the hardware:
 
 **Merge (shown above)** — compute *both* results, select per element. Costs the work of
 both branches, but the datapath is simple: a mux at the end.
@@ -201,9 +201,9 @@ elements. Costs only one computation, and the inactive elements keep their old v
         out = __riscv_vsll_vx_i32m1_m(mask, v, 1, vl);
 ```
 
-> **🎯 Hardware consequence.** Predication is just the per-element write-enable you already
+> **🎯 Hardware consequence.** Predication is just the per-element write-enable one already
 > built for tails (Chapter 4 §4.8). Merge needs `vmerge`, which is a per-element mux
-> between two vector operands. **You need both**, and both are cheap. What you must *not*
+> between two vector operands. **Teams need both**, and both are cheap. What teams must *not*
 > do is branch — there is no branch inside a vector body, ever. That is the point.
 
 ---
@@ -240,13 +240,13 @@ to memory and lose far more than it gained. The tuning rule:
 | Mixed-width, narrow source | **fractional** (`mf2`, `mf4`) |
 
 > **🎯 Hardware consequence — this is a big one.** LMUL=8 means **one instruction occupies
-> your functional unit for 8× as long**. That is excellent for throughput (the front end
-> gets a long holiday) and terrible for latency and for hazard granularity. Your sequencer
-> must handle a single instruction spanning many passes and many registers, and your hazard
+> the functional unit for 8× as long**. That is excellent for throughput (the front end
+> gets a long holiday) and terrible for latency and for hazard granularity. The sequencer
+> must handle a single instruction spanning many passes and many registers, and the hazard
 > logic must track *register groups*, not individual registers.
 >
 > `vadd.vv v0, v8, v16` at LMUL=8 writes `v0`–`v7`. A later instruction reading `v3` must
-> stall. If your scoreboard tracks single registers, you will miss this. **Design the
+> stall. If the scoreboard tracks single registers, the team will miss this. **Design the
 > scoreboard for groups from the start** — Chapter 9 §9.8.
 
 ---
@@ -275,9 +275,9 @@ Work through the arithmetic once and it will stick:
 
 ---
 
-## 7.7 What VLA costs you
+## 7.7 What VLA costs
 
-Be honest in your report — VLA is not free.
+Be honest in the report — VLA is not free.
 
 **1. `vl` is a runtime value.** The compiler cannot fully unroll, cannot compute loop trip
 counts statically, and cannot software-pipeline as aggressively. Packed SIMD's fixed width
@@ -301,7 +301,7 @@ the right call.
 
 ## 7.8 The hardware requirements, collected
 
-Everything this chapter demands of your design, in one list. This is the "why" behind
+Everything this chapter demands of the design, in one lists. This is the "why" behind
 Chapter 4's rules.
 
 | Software pattern | Hardware requirement |
@@ -316,7 +316,7 @@ Chapter 4's rules.
 | LMUL tuning (§7.5) | Sequencer spans multi-register groups; **scoreboard tracks groups** |
 | Mixed width (§7.6) | Fractional LMUL; EEW/EMUL derivation in the decoder |
 
-Nine rows. Cross-check them against your M2 test plan.
+Nine rows. Cross-check them against the M2 test plan.
 
 ---
 
@@ -326,11 +326,11 @@ Nine rows. Cross-check them against your M2 test plan.
 VLENs. Then write it with `m8` and compare the instruction counts.
 
 **7.2** Implement the `sum_rvv_fast` accumulator from §7.3. Now **remove the `_tu`
-suffix**, rebuild, and run at VLEN=128 with N=10 on both Spike and QEMU. Do you get a wrong
-answer? Explain why you might *not* — and why the code is still broken.
+suffix**, rebuild, and run at VLEN=128 with N=10 on both Spike and QEMU. Do one gets a wrong
+answer? Explain why one might *not* — and why the code is still broken.
 
 **7.3** Write a VLA function returning the **index** of the maximum element (not the value).
-You will need `vid.v` and a mask. This is genuinely tricky; it is a good pair-programming
+The team will need `vid.v` and a mask. This is genuinely tricky; it is a good pair-programming
 exercise.
 
 **7.4** Take the SAXPY from example 02 and produce four variants: `m1`, `m2`, `m4`, `m8`.
@@ -340,11 +340,11 @@ Measure instructions/element for each at VLEN=128 and VLEN=512. Plot it. Explain
 fractional LMUL. Confirm with `-S` that the compiler emits only one `vsetvli` per pass.
 
 **7.6 (implementation)** For each of the nine rows in §7.8, write the directed test that
-proves your hardware satisfies it. This is your M2 test plan — take it to Chapter 13.
+proves the hardware satisfies it. This is the M2 test plan — take it to Chapter 13.
 
 **7.7 (mentors)** §7.3's `_tu` bug: construct a machine (on paper) on which the
 non-`_tu` version gives the wrong answer, and one on which it gives the right answer. Both
-must be spec-compliant. Use this to explain to your team why "it works on Spike" is not
+must be spec-compliant. Use this to explain to the team why "it works on Spike" is not
 verification.
 
 ---
@@ -357,13 +357,13 @@ verification.
   recompilation.
 - **Reductions** carry their accumulator in a vector register across passes. The fast form
   accumulates element-wise and reduces once — and **requires tail-undisturbed**, making it
-  the single best test of your tail handling.
+  the single best test of the teamr tail handling.
 - **Conditionals** use masks two ways: predication (write-enable) and `vmerge` (mux). Never
   a branch.
 - **LMUL is a tuning knob** trading register pressure for scaffolding overhead. It also
-  forces your **scoreboard to track register groups**, not registers.
+  forces the **scoreboard to track register groups**, not registers.
 - **Fractional LMUL** makes mixed-width chains line up on a single `vl`.
-- VLA costs you compile-time constants, a `vsetvli` per pass, and a class of tail-policy
+- VLA costs compile-time constants, a `vsetvli` per pass, and a class of tail-policy
   bugs. It buys binary portability across a 32× range of hardware.
 
 ---

@@ -31,12 +31,12 @@ executing.
 
 - ✅ **A clean interface means two teams work in parallel.** The scalar team and the
   vector team agree a protocol in week 2 and then barely talk again until integration.
-- ✅ Scalar code overlaps with long vector operations — this is where a lot of your
+- ✅ Scalar code overlaps with long vector operations — this is where a lot of the teamr
   measured speedup will come from
-- ✅ You can test the vector unit standalone, driven by a testbench that speaks the
+- ✅ One can test the vector unit standalone, driven by a testbench that speaks the
   interface, with no scalar core at all
 - ✅ It's what Ara, Vicuna, Saturn, and essentially every real design do
-- ❌ You must design and verify the handshake, including the awkward cases (scalar
+- ❌ Teams must design and verify the handshake, including the awkward cases (scalar
   results flowing back, memory ordering, exceptions)
 
 > **🎯 This is the single most important architectural decision in the project, and the
@@ -153,7 +153,7 @@ flowchart TB
 | ⑧ | **Reduction / Permute** | Cross-lane data movement | ●●●●○ | M5 |
 
 **Note the difficulty ratings.** The VLSU is the hardest block by a wide margin, and the
-sequencer is second. Those two are where your schedule will slip. Chapter 11 gives them
+sequencer is second. Those two are where the schedule will slip. Chapter 11 gives them
 proportionate time; resist the temptation to rebalance toward the fun ALU work.
 
 ---
@@ -199,13 +199,13 @@ that instruction's writeback until the response arrives.
 alignment, `vill`, overlap rules from Chapter 4 §4.10) that the scalar decoder can't do.
 It must be able to report a trap back.
 
-**`vec_idle`** — needed for `fence`, for debug halt, and — most usefully — for your
+**`vec_idle`** — needed for `fence`, for debug halt, and — most usefully — for the implementerr
 testbench to know when to sample results.
 
 > **⚠️ Trap — `vsetvli` is a synchronous instruction in disguise.** It returns `vl` to a
 > scalar register, and the *next* scalar instruction usually uses that value to compute a
 > pointer bump. So the scalar core stalls on it. Every stripmine loop therefore
-> synchronises once per pass. This is inherent, it is fine, and you should measure it —
+> synchronises once per pass. This is inherent, it is fine, and teams should measure it —
 > but do not be surprised by it.
 
 ### The decoupling rule
@@ -251,7 +251,7 @@ Two things to take from this trace:
 1. **The lanes always compute; the sequencer decides what to keep.** Lane 1 did the work in
    pass 1 and it was thrown away. That is cheaper than building logic to prevent it.
 2. **All the vector-specific intelligence is in ③.** The lanes are dumb ALUs. The VRF is
-   dumb storage. Concentrate your thinking, and your verification effort, on the sequencer.
+   dumb storage. Concentrate the thinking, and the verification effort, on the sequencer.
 
 ---
 
@@ -276,14 +276,14 @@ a coupled design would have stalled the scalar pipeline.
 > **⚠️ Note the byte count: `vl` × 4 = 12 bytes, not VLEN/8 = 16.** A unit-stride load
 > fetches **`vl` elements, not a full register**. Loading 16 bytes when `vl`=3 could touch
 > an unmapped page and fault on an access the program never made. This is a real bug class.
-> Compute your byte count from `vl`.
+> Compute the byte count from `vl`.
 
 ---
 
 ## 8.7 The data widths — get these right early
 
 Wrong widths are the most common source of elaboration errors and silent truncation. Fix
-them in your parameter package on day one (Chapter 12).
+them in the parameter package on day one (Chapter 12).
 
 ```
    VLEN                   = 128         (parameter)
@@ -308,8 +308,8 @@ them in your parameter package on day one (Chapter 12).
 > truncate the moment anyone uses `e8, m8`. Size it as `$clog2(VLEN)+1`.
 
 > **⚠️ Trap — a lane is not one element.** At SEW=8 with a 32-bit lane datapath, one lane
-> processes **four** 8-bit elements per pass (a packed sub-word ALU). Your "elements per
-> pass" is `NR_LANES × ELEN / SEW`, not `NR_LANES`. Decide in M1 whether your lanes do
+> processes **four** 8-bit elements per pass (a packed sub-word ALU). The "elements per
+> pass" is `NR_LANES × ELEN / SEW`, not `NR_LANES`. Decide in M1 whether the lanes do
 > sub-word parallelism or process one element per pass regardless of SEW.
 >
 > **Recommendation for v1:** build the packed sub-word ALU. It is a segmented adder — carry
@@ -320,13 +320,13 @@ them in your parameter package on day one (Chapter 12).
 
 ## 8.8 What is deliberately *not* in this diagram
 
-Name your omissions — a reviewer will ask.
+Name the omissions — a reviewer will ask.
 
 | Absent | Why |
 |---|---|
 | Vector FPU | v1 is integer-only (`Zve32x`). Chapter 16. |
 | Chaining network | Correctness first. Added in M6 if time allows (Ch 2 §2.4). |
-| Renaming / out-of-order | Unnecessary. Vectors give you parallelism without it (Ch 1 §1.3). |
+| Renaming / out-of-order | Unnecessary. Vectors give the implementer parallelism without it (Ch 1 §1.3). |
 | Vector cache | The VLSU talks to the scalar L1 or directly to memory. |
 | Segment / indexed addressing | Deferred (Ch 5 §5.12). |
 | Multi-core / coherence | Chapter 16. |
@@ -346,8 +346,8 @@ Practical instructions for the team:
    sequencer deasserts write-enable one pass early" is.
 
 > **🔧 Exercise 8.1 (whole team, week 2).** Redraw this diagram on a whiteboard from
-> memory. Then, for each arrow, write the actual signal names and widths. Disagreements you
-> discover in this exercise are exactly the integration bugs you have just avoided.
+> memory. Then, for each arrow, write the actual signal names and widths. Disagreements one
+> discover in this exercise are exactly the integration bugs the team has just avoided.
 
 ---
 
@@ -367,7 +367,7 @@ instruction needed two scalar operands?
 
 **8.6 (design)** §8.4 says the scalar core stalls on scalar memory access while vector
 memory ops are outstanding. Estimate the cost on the SAXPY loop of Chapter 1. Is it
-acceptable? What would you need to do better?
+acceptable? What would teams need to do better?
 
 **8.7 (mentors)** Write the full interface specification document from §8.4: every signal,
 its width, its direction, and the handshake timing. Include a waveform diagram for
@@ -388,7 +388,7 @@ week-2 deliverable and everything else depends on it.**
   scalar writeback + illegal + idle back. Freeze it in week 2.
 - **All the intelligence is in the sequencer.** Lanes are dumb ALUs; the VRF is dumb
   storage. Lanes always compute; the sequencer decides what to keep.
-- A unit-stride load fetches **`vl` elements, not a whole register** — otherwise you fault
+- A unit-stride load fetches **`vl` elements, not a whole register** — otherwise one fault
   on memory the program never touched.
 - Size `vl` as `$clog2(VLEN)+1`, and remember one lane handles `ELEN/SEW` elements per
   pass, not one.

@@ -1,8 +1,8 @@
 # Chapter 5 — The Instruction Set Tour
 
-> **Goal of this chapter.** Give you a map of the whole RVV instruction set, organised the
-> way your *decoder* will see it, with encodings you can trust. This chapter doubles as the
-> reference you will keep open while writing `vec_decoder.sv`.
+> **Goal of this chapter.** Give one a map of the whole RVV instruction set, organised the
+> way the *decoder* will see it, with encodings one can trust. This chapter doubles as the
+> reference the team will keep open while writing `vec_decoder.sv`.
 
 Every encoding here was produced by assembling the instruction with
 `riscv64-unknown-elf-as` and reading back the machine word. Nothing is from memory.
@@ -24,7 +24,7 @@ instructions, and it is achieved by heavy use of `funct6` and the `funct3` sub-f
 
 Yes — vector loads and stores share opcodes with scalar floating-point loads and stores.
 They are distinguished by the `width` field: scalar FP uses `width` = 010 (`flw`) and 011
-(`fld`), while vector loads use 000, 101, 110, 111. Your decoder must check this.
+(`fld`), while vector loads use 000, 101, 110, 111. The decoder must check this.
 
 ### The `OP-V` instruction format
 
@@ -41,7 +41,7 @@ They are distinguished by the `width` field: scalar FP uses `width` = 010 (`flw`
 > 19:15). This is reversed from what most people assume.
 >
 > It matters for non-commutative operations. `vsub.vv v1, v2, v3` computes
-> **`v2 - v3`**, i.e. `vs2 - vs1`. Get this backwards in your ALU and every commutative
+> **`v2 - v3`**, i.e. `vs2 - vs1`. Get this backwards in the ALU and every commutative
 > test will pass while every subtract and shift silently fails. Write a directed test.
 
 ### `funct3` — the operand-source selector
@@ -69,13 +69,13 @@ Bolded rows are the ones MEDS-V v1 needs (no floating point).
 > 0x962180d7  vsll.vv v1,v2,v3    funct6 = 100101, funct3 = OPIVV
 > 0x9621a0d7  vmul.vv v1,v2,v3    funct6 = 100101, funct3 = OPMVV
 > ```
-> Same `funct6`. Completely different operations. **Your decoder must key on
+> Same `funct6`. Completely different operations. **The decoder must key on
 > `{funct6, funct3}` together** — a 9-bit lookup. Teams that build a `funct6`-only case
 > statement discover this in the worst possible way.
 
 The split is roughly: **OPI** = simple integer ALU work, **OPM** = multiplier, mask, and
 reduction work, **OPF** = floating point. That maps neatly onto three functional units, and
-is a hint about how to organise your datapath.
+is a hint about how to organise the datapath.
 
 ---
 
@@ -104,7 +104,7 @@ saves `vtype` to memory and restores it with `vsetvl`.
 
 ## 5.3 Loads and stores
 
-The VLSU is your hardest block, so understand its instruction space properly.
+The VLSU is the hardest block, so understand its instruction space properly.
 
 ### Encoding
 
@@ -160,7 +160,7 @@ one at a time."
 > **reserved encoding**.
 
 This is why `vle32.v` loads 32-bit elements even if SEW is 8: the load's width comes from
-the *opcode*, not from `vtype`. It lets you load narrow data and compute on it wide, or
+the *opcode*, not from `vtype`. It lets an implementation load narrow data and compute on it wide, or
 vice versa, without a `vsetvli` in between.
 
 ### Unit-stride sub-modes (`lumop`/`sumop`)
@@ -201,15 +201,15 @@ element *k* > 0 faults, instead of trapping it **truncates `vl` to *k*** and com
 successfully. This is what makes vectorised `strlen` safe:
 
 ```
-    you want to load 16 bytes to search for a NUL
+    one wants to load 16 bytes to search for a NUL
     but the string might end 3 bytes before an unmapped page
     → a plain vle8.v would segfault
     → vle8ff.v loads what it can, sets vl to what it got, no fault
 ```
 
-Without it, you cannot safely vectorise any loop whose trip count depends on the data. It
+Without it, one cannot safely vectorise any loop whose trip count depends on the data. It
 is the one "exotic" load worth considering even in a small implementation — but it does
-require your VLSU to report a fault index back to the `vl` CSR, which is real complexity.
+require the VLSU to report a fault index back to the `vl` CSR, which is real complexity.
 **MEDS-V v1: defer it.** Note it in the scope contract.
 
 ### Segment loads (`nf`)
@@ -224,7 +224,7 @@ require your VLSU to report a fault index back to the `vl` CSR, which is real co
                              v3 = B0 B1 B2 ...
 ```
 
-It is a de-interleave in hardware — exactly what you want for RGB pixel data or complex
+It is a de-interleave in hardware — exactly what one wants for RGB pixel data or complex
 numbers. Constraint: `EMUL × NFIELDS ≤ 8`.
 
 **MEDS-V v1: defer.** It is very useful for the RGB→grayscale benchmark, but it is a
@@ -274,9 +274,9 @@ Notes that matter:
   element into `v1`. The destination is a mask register (usually `v0`, so the next
   instruction can use it). Verified: `0x622180d7 vmseq.vv v1,v2,v3`.
 - **There is no `vmsgt.vv`.** Greater-than with two vectors is just `vmslt` with the
-  operands swapped, so the spec omits it. `vmsgt.vx`/`.vi` *do* exist, because you cannot
+  operands swapped, so the spec omits it. `vmsgt.vx`/`.vi` *do* exist, because one cannot
   swap a scalar into the vector slot. A nice example of encoding-space economy — and a
-  gap that will confuse your team if nobody explains it.
+  gap that will confuse the team if nobody explains it.
 - **Shift amounts are taken modulo SEW.** `vsll.vv` with SEW=32 uses only the low 5 bits of
   each element of `vs1`.
 - **`vrsub`** exists because OPIVI immediates can't be the second operand of a subtract;
@@ -307,7 +307,7 @@ from `vwadd.vv`, which widens both sources. Note that widening integer ops live 
 **OPMVV**, not OPIVV.
 
 Widening is essential for real DSP: accumulate 16-bit products into 32-bit sums without
-overflow. Your FIR benchmark in Chapter 14 needs `vwmacc`.
+overflow. The FIR benchmark in Chapter 14 needs `vwmacc`.
 
 ### Extension instructions
 
@@ -319,7 +319,7 @@ overflow. Your FIR benchmark in Chapter 14 needs `vwmacc`.
 
 `vzext.vf2/vf4/vf8` and `vsext.*` zero- or sign-extend elements by 2×, 4×, or 8×. Note both
 share `funct6 = 010010` and are distinguished by the **`vs1` field used as an opcode
-extension**. This "unary op in the `vs1` slot" pattern recurs throughout OPMVV — your
+extension**. This "unary op in the `vs1` slot" pattern recurs throughout OPMVV — the
 decoder needs a second-level decode on `vs1` for `funct6 ∈ {010000, 010010, 010100}`.
 
 ---
@@ -343,7 +343,7 @@ decoder needs a second-level decode on `vs1` for `funct6 ∈ {010000, 010010, 01
 
 > **⚠️ Trap — `vmacc` vs `vmadd`.** Both are multiply-accumulate; they differ in **which
 > operand is overwritten**:
-> - `vmacc`: `vd += vs1 × vs2` — the *accumulator* is `vd`. This is what you want 95% of
+> - `vmacc`: `vd += vs1 × vs2` — the *accumulator* is `vd`. This is what one wants 95% of
 >   the time.
 > - `vmadd`: `vd = vd × vs1 + vs2` — the *multiplicand* is `vd`.
 >
@@ -374,7 +374,7 @@ of truncating. `vxsat` records whether any saturation occurred; `vxrm` selects o
 rounding modes.
 
 They are cheap to add (a comparator and a mux on top of the adder) and they make the
-difference between "we can run a DSP kernel" and "we can run a DSP kernel *correctly*".
+difference between "the team can run a DSP kernel" and "the team can run a DSP kernel *correctly*".
 **Recommended for MEDS-V v1: `vsadd`, `vsaddu`, `vssub`, `vssubu`, `vnclip`, `vnclipu`.**
 Skip `vsmul` and the averaging ops.
 
@@ -405,7 +405,7 @@ and the result is written to **element 0 of `vd`**.
        :   ──┘
 ```
 
-Passing the initial value in via `vs1[0]` lets you accumulate across stripmine iterations
+Passing the initial value in via `vs1[0]` lets an implementation accumulate across stripmine iterations
 without a scalar round-trip.
 
 > **⚠️ Implementation warning — reductions break the lane model.** Every other
@@ -416,13 +416,13 @@ without a scalar round-trip.
 >   (slow, tiny).
 >
 > **MEDS-V v1: build the serial version.** It is `vl` cycles, it is obviously correct, and
-> reductions are a small fraction of the dynamic instruction count in your benchmarks. Log
+> reductions are a small fraction of the dynamic instruction count in the benchmarks. Log
 > the cycle cost and propose the tree as future work — that's a clean, honest result.
 
-Ordering note: `vredsum` for integers is exact and order-independent, so you may reduce in
+Ordering note: `vredsum` for integers is exact and order-independent, so one may reduce in
 any order. Floating-point reductions are *not* — hence RVV has both `vfredusum`
 (**u**nordered, fast) and `vfredosum` (**o**rdered, strictly sequential, reproducible).
-Not your problem in v1, but know why the pair exists.
+Not the problem in v1, but know why the pair exists.
 
 ---
 
@@ -446,17 +446,17 @@ Operations on masks themselves.
 ```
 
 Notice `funct6 = 010100` is shared by six instructions, and `010000` by three. **They are
-disambiguated by the `vs1` field**, which acts as an opcode extension for unary ops. Your
+disambiguated by the `vs1` field**, which acts as an opcode extension for unary ops. The
 decoder needs that second level.
 
 The odd-looking ones are surprisingly useful:
 
-- **`vid.v`** writes `[0, 1, 2, 3, …]`. It is how you generate an index vector for
+- **`vid.v`** writes `[0, 1, 2, 3, …]`. It is how one generate an index vector for
   strided/gather addressing, or a ramp for computing `i` inside a vectorised loop. Cheap
   to implement (a counter per lane) and used constantly. **Put it in v1.**
-- **`vcpop.m`** counts active elements — how you find out how many elements passed a filter.
+- **`vcpop.m`** counts active elements — how one finds out how many elements passed a filter.
 - **`viota.m`** computes the running sum of mask bits, which gives each active element its
-  *compacted destination index*. `viota` + `vrgather` is how you implement stream
+  *compacted destination index*. `viota` + `vrgather` is how one implements stream
   compaction (filtering) in a vector machine.
 - **`vmsbf/vmsif/vmsof`** find the first set bit — the building blocks of vectorised
   `strlen` and loop-exit conditions.
@@ -525,7 +525,7 @@ One `funct6` value, `010111`, covers a family disambiguated by `vm` and `vs2`:
 5c22b0d7  vmerge.vim v1,v2,5,v0    vm=0                    → select by mask
 ```
 
-- `vmv.v.x` / `vmv.v.i` **broadcast** a scalar to every element — how you get a constant
+- `vmv.v.x` / `vmv.v.i` **broadcast** a scalar to every element — how one gets a constant
   into a vector.
 - `vmerge.v*m` selects per element: `vd[i] = mask[i] ? operand : vs2[i]`. This is the
   vector `?:` and the standard way to implement `if/else` without predication on the write
@@ -541,12 +541,12 @@ register-to-register partner of `vl<N>re<EEW>.v`.
 `OPFVV` and `OPFVF` cover the FP world: `vfadd`, `vfmul`, `vfmacc`, `vfdiv`, `vfsqrt`,
 conversions (`vfcvt.*`), FP comparisons and reductions.
 
-The reason MEDS-V v1 excludes them is not that the vector part is hard — it is that **you
+The reason MEDS-V v1 excludes them is not that the vector part is hard — it is that **one
 would be building a pipelined IEEE-754 FPU**, which is a substantial project on its own,
 with its own verification burden (denormals, NaN propagation, five rounding modes,
 exception flags). Chapter 16 discusses adding `Zve32f` as a follow-on.
 
-If your team includes someone who has already built an FPU, this calculus changes. Discuss
+If the team includes someone who has already built an FPU, this calculus changes. Discuss
 it in week 1 and record the decision.
 
 ---
@@ -584,7 +584,7 @@ Here is the concrete list. This is the contract; Appendix E is the formal versio
 **Permute (4)**
 `vmv.x.s`, `vmv.s.x`, `vslide1up`, `vslide1down`
 
-**Total: ~58 distinct operations**, which expand to roughly 120 encodings once you count
+**Total: ~58 distinct operations**, which expand to roughly 120 encodings once one counts
 `.vv`/`.vx`/`.vi` variants. That is a realistic semester target, it covers every benchmark
 in Chapter 14, and it is a genuine subset of `Zve32x`.
 
@@ -611,7 +611,7 @@ which register lands in the `vs1` field and which in `vs2`. Then state what
 
 **5.2** Find two instructions in this chapter that share a `funct6` but differ in `funct3`,
 and two that share both `funct6` and `funct3` but differ in `vs1`. Explain what this means
-for the structure of your decoder.
+for the structure of the decoder.
 
 **5.3** Write the vector assembly for `y[i] = max(0, x[i])` (ReLU) using (a) `vmax.vx` with
 a zero scalar, and (b) `vmslt` + `vmerge`. Which is better and why?
@@ -624,7 +624,7 @@ a zero scalar, and (b) `vmslt` + `vmerge`. Which is better and why?
 instructions in §5.12, as a SystemVerilog `case` statement. This is a direct M1
 deliverable. Cross-check every entry by assembling it.
 
-**5.7 (mentors)** Review §5.12 with your team. Argue for **removing** three instructions
+**5.7 (mentors)** Review §5.12 with the team. Argue for **removing** three instructions
 and **adding** one. Update Appendix E with the agreed list and date it.
 
 ---

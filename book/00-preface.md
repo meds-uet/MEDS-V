@@ -7,14 +7,14 @@ Maktab-e-Digital Systems (MEDS), Lahore
 
 ## Who this book is for
 
-You have built, or can follow, a single-cycle RV32I processor in SystemVerilog — the kind
-of thing covered in the MEDS *"Build your own RISC-V Processor in a Day"* workshop. You
-know what a register file, an ALU, and a control unit are. You have never touched a vector
-processor, and the phrase "LMUL=1/2 with tail-agnostic policy" means nothing to you yet.
+Readers are assumed to have built, or to be able to follow, a single-cycle RV32I processor in SystemVerilog — the kind
+of thing covered in the MEDS *"Build the own RISC-V Processor in a Day"* workshop. One
+know what a register file, an ALU, and a control unit are. Most readers will never have touched a vector
+processor, and the phrase "LMUL=1/2 with tail-agnostic policy" means nothing to the implementer yet.
 
 That is exactly the right starting point. This book assumes:
 
-| We assume you know | We do **not** assume you know |
+| Assumed | Not assumed |
 |---|---|
 | Digital logic, FSMs, timing | Anything about SIMD or vectors |
 | SystemVerilog RTL basics | Anything about RVV |
@@ -23,16 +23,16 @@ That is exactly the right starting point. This book assumes:
 
 Every vector-specific concept is built from zero.
 
-## What you will have at the end
+## What the team has at the end
 
-A working, parameterisable RISC-V vector processor — we call the reference design
+A working, parameterisable RISC-V vector processor — the team call the reference design
 **MEDS-V** — that:
 
 - implements a defined, honest subset of the ratified **RVV 1.0** extension,
 - attaches to a scalar RV64 core as a decoupled coprocessor,
 - runs real workloads (SAXPY, GEMM, FIR, 2-D convolution, ReLU/softmax, memcpy),
 - is verified against Spike, the golden RISC-V reference model,
-- and produces cycle counts you can defend in a comparison table against Ara, Vicuna,
+- and produces cycle counts one can defend in a comparison table against Ara, Vicuna,
   Saturn and a scalar baseline.
 
 ## How the book is organised
@@ -42,10 +42,10 @@ The single most common way this project fails is a team that starts coding datap
 week 1 and discovers in week 9 that they misunderstood `vl`, `LMUL`, or the tail policy —
 and has to throw away the register file.
 
-| Part | Chapters | What it gives you | Who reads it |
+| Part | Chapters | What it gives the implementer | Who reads it |
 |---|---|---|---|
 | **I — Foundations** | 1–3 | What a vector processor *is* and why it wins | Everyone, first |
-| **II — The RVV 1.0 ISA** | 4–7 | The contract your hardware must honour | Everyone, first |
+| **II — The RVV 1.0 ISA** | 4–7 | The contract the hardware must honour | Everyone, first |
 | **III — Microarchitecture** | 8–10 | The block diagram and every block in it | Everyone |
 | **IV — Building It** | 11–13 | Milestones, RTL skeleton, verification | Implementers |
 | **V — Proving It** | 14–16 | Workloads, measurement, comparison | Everyone, at the end |
@@ -77,13 +77,13 @@ and has to throw away the register file.
 - [Ch 9 — The Building Blocks](part3/09-building-blocks.md) — one section per block:
   what it does, its interface, its internal structure, its hazards.
 - [Ch 10 — The Design Space](part3/10-design-space.md) — VLEN, lane count, chaining,
-  in-order vs. decoupled. The decisions you must make in week 3, and their consequences.
+  in-order vs. decoupled. The decisions teams must make in week 3, and their consequences.
 
 **Part IV — Building It**
 - [Ch 11 — The Project Roadmap](part4/11-project-roadmap.md) — milestones M0–M7 with exit
   criteria, team structure, and a week-by-week schedule.
 - [Ch 12 — RTL Skeleton Walkthrough](part4/12-rtl-skeleton-walkthrough.md) — the file
-  tree, the parameter package, and the modules you fill in.
+  tree, the parameter package, and the modules one fill in.
 - [Ch 13 — Verification Strategy](part4/13-verification-strategy.md) — unit tests,
   Spike co-simulation, the RVV architectural test suite, random stress.
 
@@ -103,12 +103,12 @@ and has to throw away the register file.
 
 ## Conventions used in this book
 
-> **📐 Spec box** — a direct, verified statement of what RVV 1.0 requires. When your RTL
+> **📐 Spec box** — a direct, verified statement of what RVV 1.0 requires. When the RTL
 > and this box disagree, the box is right.
 
 > **⚠️ Trap** — a mistake teams reliably make here.
 
-> **🔧 Exercise** — do this before moving on. Mentees: these are your homework.
+> **🔧 Exercise** — do this before moving on. Mentees: these are the homework.
 
 > **🎯 Milestone hook** — connects the concept to a specific milestone in Chapter 11.
 
@@ -119,16 +119,16 @@ illustrations.
 ## A note to mentors
 
 The failure mode of a project like this is not technical difficulty. It is **scope**. RVV
-1.0 in full is roughly 600 instructions once you count every SEW/LMUL/masking
+1.0 in full is roughly 600 instructions once one counts every SEW/LMUL/masking
 combination — more than a small team can implement, let alone verify, in a semester.
 
-Appendix E is a **scope contract**. Read it in week 1, negotiate it with your team, sign
+Appendix E is a **scope contract**. Read it in week 1, negotiate it with the team, sign
 it, and then defend it. A verified 60-instruction vector processor that runs six workloads
 and has a comparison table is an excellent result. An unverified 300-instruction one that
 runs nothing is not a result at all.
 
 The second failure mode is verification debt. Chapter 13 puts Spike co-simulation at
-**milestone M2**, not M6, for this reason. Build the checker before you build the thing
+**milestone M2**, not M6, for this reason. Build the checker before one builds the thing
 it checks.
 
 ---

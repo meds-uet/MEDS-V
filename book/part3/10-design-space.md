@@ -32,16 +32,16 @@ others early.
 Settled in Chapter 8 §8.1: **decoupled**, primarily so two teams can work in parallel
 behind a frozen interface.
 
-The one argument for coupled: if your team is three people and you already have a scalar
-core you know intimately, integrating directly avoids designing a protocol. If that
-describes you, it is a legitimate choice — but you lose the parallel work streams, and
+The one argument for coupled: if the team is three people and one already have a scalar
+core one knows intimately, integrating directly avoids designing a protocol. If that
+describes one, it is a legitimate choice — but one loses the parallel work streams, and
 almost every real design is decoupled.
 
 ---
 
 ## 10.3 Decision 2 — ELEN: 32 or 64?
 
-ELEN is the widest element you support. It sets your lane datapath width.
+ELEN is the widest element one support. It sets the lane datapath width.
 
 | | **ELEN = 32** | ELEN = 64 |
 |---|---|---|
@@ -56,17 +56,17 @@ ELEN is the widest element you support. It sets your lane datapath width.
 > - A 64×64 multiplier is roughly four times the area of a 32×32, and none of the Chapter
 >   14 benchmarks need 64-bit elements.
 > - `Zve32x` is a real, citable extension name.
-> - It halves your VRF read/write datapath width per lane.
+> - It halves the VRF read/write datapath width per lane.
 >
-> **The one real cost:** you cannot do `vwmacc` from `e32` to `e64`, so 32-bit
-> accumulation must be handled in 32 bits with overflow risk. For your benchmarks
-> (`int8`/`int16` data widening to `int32`) this is fine. Say so explicitly in your report.
+> **The one real cost:** one cannot do `vwmacc` from `e32` to `e64`, so 32-bit
+> accumulation must be handled in 32 bits with overflow risk. For the benchmarks
+> (`int8`/`int16` data widening to `int32`) this is fine. Say so explicitly in the report.
 
 ---
 
 ## 10.4 Decision 4 — VLEN
 
-The parameter everyone wants to argue about. It matters less than you'd think, because it
+The parameter everyone wants to argue about. It matters less than one'd think, because it
 should be a parameter.
 
 | VLEN | VRF size | Elements (SEW=32) | Simulation speed | Good for |
@@ -78,16 +78,16 @@ should be a parameter.
 
 > **🎯 Recommendation: develop at VLEN = 128, demonstrate at 128/256/512.**
 >
-> VLEN=128 keeps RTL simulation fast, which matters enormously when you are running
+> VLEN=128 keeps RTL simulation fast, which matters enormously when running
 > thousands of co-simulation tests. Then, because everything is parameterised, re-elaborate
 > at 256 and 512 for the final measurements — **and that VLEN sweep is one of the best
-> results in your report.** It is a graph nobody can produce without a working
+> results in the report.** It is a graph nobody can produce without a working
 > parameterised design, and it directly demonstrates the vector-length-agnosticism claim
 > from Chapter 1.
 
 > **⚠️ Trap.** For this to work, `VLEN` must appear **nowhere** as a literal. No `128`, no
-> `16` (bytes), no `4` (elements). Everything derives from the parameter package. Grep your
-> RTL for bare numeric literals before M6 — you will find some.
+> `16` (bytes), no `4` (elements). Everything derives from the parameter package. Grep the
+> RTL for bare numeric literals before M6 — the team will find some.
 
 ---
 
@@ -109,14 +109,14 @@ should be a parameter.
 > **🎯 Recommendation: build for 1, demonstrate at 1, 2, 4.**
 >
 > Lane count is the *other* free scaling axis, and a lane-count sweep alongside the VLEN
-> sweep gives you a 2-D result table. Two parameters, one design, a real scalability story.
+> sweep gives the implementer a 2-D result table. Two parameters, one designs, a real scalability story.
 
 **The catch:** cross-lane operations (reductions, slides) get harder as lanes multiply. At
 one lane there is no "cross-lane" at all — reductions are just a loop. This is another
 reason to start at one lane: **blocks ⑦ and ⑧ are nearly free in the L=1 configuration**,
-so you can get the whole benchmark suite running before you take on inter-lane wiring.
+so one can get the whole benchmark suite running before take on inter-lane wiring.
 
-### The relationship you must not confuse
+### The relationship teams must not confuse
 
 ```
    elements per pass = NR_LANES × (ELEN / SEW)
@@ -126,7 +126,7 @@ so you can get the whole benchmark suite running before you take on inter-lane w
 
 At VLEN=128, ELEN=32, NR_LANES=2, SEW=8: each lane's 32-bit datapath handles 4 bytes, so
 one pass covers **8 elements**, and VLMAX (LMUL=1) is 16 — two passes. Get this wrong in
-your sequencer and every `e8` operation is wrong by a factor of four.
+the sequencer and every `e8` operation is wrong by a factor of four.
 
 ---
 
@@ -134,28 +134,27 @@ your sequencer and every `e8` operation is wrong by a factor of four.
 
 Chapter 4 §4.8 gave the answer, but state it as a decision:
 
-| Option | What you build | Compliance |
+| Option | What one builds | Compliance |
 |---|---|---|
 | **A. Undisturbed always** | Element-granular write enables; never write inactive/tail elements | ✅ Fully compliant with `ta`, `tu`, `ma`, `mu` |
-| B. Agnostic-as-ones | Full-width writes; fill tails with 1s | ✅ For `ta`/`ma`, ❌ for `tu`/`mu` — you'd need option A as well |
+| B. Agnostic-as-ones | Full-width writes; fill tails with 1s | ✅ For `ta`/`ma`, ❌ for `tu`/`mu` — one'd need option A as well |
 | C. Both, with a policy mux | Extra mux and control | ✅ Compliant, more area, no benefit |
 
 > **🎯 Recommendation: Option A.** Build only the undisturbed datapath. Because "retain
-> previous values" is an explicitly permitted implementation of agnostic, you get full
+> previous values" is an explicitly permitted implementation of agnostic, one gets full
 > `vta`/`vma` compliance for free, with no policy mux.
 >
-> **What you give up:** on a machine where a full-width write is cheaper than a masked one
-> (some SRAM macros), agnostic would let you skip the byte-enable logic. You aren't on such
-> a machine.
+> **What one gives up:** on a machine where a full-width write is cheaper than a masked one
+> (some SRAM macros), agnostic would let an implementation skip the byte-enable logic. MEDS-V is not on such a machine.
 >
-> **Write this decision down**, because it is a good one and a reviewer will ask why you
+> **Write this decision down**, because it is a good one and a reviewer will ask why one
 > have no `vta` mux.
 
 ---
 
 ## 10.7 Decision 8 — Memory port width
 
-The decision that determines whether your VLSU is hard or very hard.
+The decision that determines whether the VLSU is hard or very hard.
 
 | Port width | Unit-stride load of VLEN bits | VLSU complexity |
 |---|---|---|
@@ -167,12 +166,12 @@ The decision that determines whether your VLSU is hard or very hard.
 >
 > This makes the common case — a unit-stride access — a single transaction with a byte
 > mask. Combined with requiring natural EEW alignment, blocks 2 and 3 of §9.6 nearly
-> disappear, and you get a working VLSU in M4 rather than M7.
+> disappear, and one gets a working VLSU in M4 rather than M7.
 >
 > It is not free: a VLEN-bit memory port is a wide, expensive interface, and on a real SoC
-> you would be constrained by the bus. **Say this in your report.** "We used a VLEN-wide
+> one would be constrained by the bus. **Say this in the report.** "The team used a VLEN-wide
 > idealised memory port; a production design would need a coalescing unit and a narrower
-> AXI interface" is an honest limitation that shows you understand the problem.
+> AXI interface" is an honest limitation that shows understand the problem.
 
 ---
 
@@ -194,8 +193,8 @@ localparam VLEN = 512;  ELEN = 32;  NR_LANES = 4;
 // VRF 16 Kib, 4 elements/cycle at SEW=32
 ```
 
-Running the same test suite and the same benchmarks across all three, unmodified, **is your
-headline result.** It proves parameterisation, it proves VLA, and it gives you a
+Running the same test suite and the same benchmarks across all three, unmodified, **is the
+headline result.** It proves parameterisation, it proves VLA, and it gives the implementer a
 scalability curve. Chapter 15 §15.5 shows how to present it.
 
 ---
@@ -204,32 +203,32 @@ scalability curve. Chapter 15 §15.5 shows how to present it.
 
 Things teams do that reliably cost weeks:
 
-**"We'll make VLEN configurable later."** You won't. Literals spread. Parameterise on day
+**"The team'll make VLEN configurable later."** One won't. Literals spread. Parameterise on day
 one — it is nearly free then and expensive at week 10.
 
-**"Let's implement all of RVV."** ~600 instructions once you count SEW/LMUL/mask
+**"Let's implement all of RVV."** ~600 instructions once one counts SEW/LMUL/mask
 combinations. A verified subset beats an unverified superset every time. Appendix E exists
 for this.
 
-**"We'll add verification once it works."** By then you cannot tell *what* works. Chapter
+**"The team'll add verification once it works."** By then one cannot tell *what* works. Chapter
 13 puts co-simulation at M2 for exactly this reason.
 
 **"The ALU is the interesting part."** The ALU is a week. The VLSU and the sequencer are
-the project. Allocate people accordingly — put your strongest engineer on the VLSU, not the
+the project. Allocate people accordingly — put the strongest engineer on the VLSU, not the
 adder.
 
-**"We'll do chaining from the start."** Chaining requires everything else to be correct
+**"The team'll do chaining from the start."** Chaining requires everything else to be correct
 first. It is an optimisation, and optimising an incorrect machine wastes the effort twice.
 
 **"Let's start with 8 lanes to show off."** Cross-lane operations at 8 lanes are hard, and
-you will be debugging reduction trees before you have a working `vadd`. Start at one.
+the team will be debugging reduction trees before the team has a working `vadd`. Start at one.
 
 ---
 
-## 10.10 Your decision record
+## 10.10 The decision record
 
 Copy this into `docs/decisions.md`, fill it in as a team, and date it. Revisit at M4 and
-M7; note anything you changed and why.
+M7; note anything one changed and why.
 
 ```markdown
 # MEDS-V Design Decisions
@@ -265,7 +264,7 @@ Team: ____________________   Date: ____________   Revision: ____
 pass at SEW=8? At SEW=32? How many passes for `vl` = 100 at each?
 
 **10.3** §10.7 recommends a VLEN-wide memory port. For VLEN=512 that is a 512-bit bus.
-Estimate the cost in wires. What would you do differently for a real SoC?
+Estimate the cost in wires. What would one does differently for a real SoC?
 
 **10.4** Argue the case *against* ELEN=32. Under what workload would 64-bit elements be
 worth quadrupling the multiplier area?
@@ -279,9 +278,9 @@ sentence. Present it in a design review.
 
 - **VLEN and lane count are cheap to change if parameterised; everything else is not.**
   Fix the others early, sweep those two at the end.
-- **ELEN = 32** — a 64-bit multiplier costs 4× and buys nothing for your benchmarks.
+- **ELEN = 32** — a 64-bit multiplier costs 4× and buys nothing for the benchmarks.
 - **Develop at VLEN=128, 1 lane. Demonstrate at 128/256/512 × 1/2/4 lanes.** That sweep is
-  your headline result.
+  the headline result.
 - **Elements per pass = NR_LANES × ELEN/SEW**, not NR_LANES.
 - **Build only the undisturbed write path** — it is fully compliant with both policies and
   needs no mux.

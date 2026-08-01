@@ -1,7 +1,7 @@
 # Chapter 2 — Anatomy of a Vector Processor
 
 > **Goal of this chapter.** Build a mental model of the machine, in the abstract, before
-> any RISC-V specifics. By the end you should be able to draw a vector processor on a
+> any RISC-V specifics. By the end a reader should be able to draw a vector processor on a
 > whiteboard from memory and explain what every box does.
 
 Chapter 1 ended with a list of six things the machine needs. This chapter turns that list
@@ -66,7 +66,7 @@ A scalar register file holds 32 values of XLEN bits. A **vector** register file 
               elem 0   elem 1   elem 2   elem 3
 ```
 
-**VLEN is a parameter you choose when you build the hardware.** It is not in the ISA. A
+**VLEN is a parameter one chooses when one builds the hardware.** It is not in the ISA. A
 tiny embedded implementation might use VLEN=128; a high-performance one 512, 1024, or more.
 
 ### How many elements fit?
@@ -83,16 +83,16 @@ That depends on how wide each element is. If VLEN = 128 bits:
 The same physical bits, interpreted differently. **The register file does not know or care
 what the element width is** — it stores VLEN bits. Element width is a property of the
 *instruction* being executed, supplied by the control state (§2.5). This is a genuinely
-important implementation insight: your VRF is just a wide, dumb SRAM. All the cleverness
+important implementation insight: the VRF is just a wide, dumb SRAM. All the cleverness
 about element widths lives in the lanes and the control path.
 
 > **⚠️ Trap.** Newcomers try to build a register file that "knows" it holds 32-bit
 > elements. Don't. Build it as `logic [VLEN-1:0] vrf [0:31]` and let the datapath slice it.
-> The moment you need to support two element widths, a width-aware VRF becomes a rewrite.
+> The moment teams need to support two element widths, a width-aware VRF becomes a rewrite.
 
 ### Sizing it
 
-The VRF is the largest single structure in your design. Its capacity is:
+The VRF is the largest single structure in the design. Its capacity is:
 
 ```
 VRF bits = 32 × VLEN
@@ -108,15 +108,15 @@ VRF bits = 32 × VLEN
 Compare: an RV64 scalar register file is 32 × 64 = 2 Kib = 256 bytes. So even a modest
 VLEN=256 vector unit has **4× more register storage than the entire scalar core**, and it
 needs multiple read and write ports. This is why Chapter 9 §9.3 spends so long on banking:
-you cannot build a 3-read/1-write flip-flop array of this size and still close timing.
+one cannot build a 3-read/1-write flip-flop array of this size and still close timing.
 
 ---
 
 ## 2.3 Lanes — the key structural idea
 
-Here is the question that defines your microarchitecture:
+Here is the question that defines the microarchitecture:
 
-> A `vadd` on VLEN=512 with 32-bit elements must produce 16 sums. Do you build 16 adders?
+> A `vadd` on VLEN=512 with 32-bit elements must produce 16 sums. Do one builds 16 adders?
 
 Three answers, all valid, at different points on the area/performance curve:
 
@@ -175,7 +175,7 @@ And the price:
   Chapter 9 §9.7 is about exactly this.
 
 > **🎯 Milestone hook.** MEDS-V starts at **L = 1** (milestone M3) and grows to L = 2 or 4
-> (M6). If you write the lane as a properly parameterised module from the start, that
+> (M6). If one writes the lane as a properly parameterised module from the start, that
 > growth is a parameter change. Chapter 12's skeleton is built this way.
 
 ### The pipeline picture
@@ -223,9 +223,9 @@ cycle.
 
 > **⚠️ Trap.** Chaining is *hard* to get right and easy to get subtly wrong (element
 > counters must stay in lockstep; a stall in one unit must back-pressure the whole chain).
-> Do **not** attempt it in your first working design. Get a correct, non-chained machine
+> Do **not** attempt it in a first working design. Get a correct, non-chained machine
 > first (M3), measure it, then add chaining (M6) and measure the improvement. That
-> before/after number is one of the best results you can put in your report.
+> before/after number is one of the best results one can put in the report.
 
 ---
 
@@ -234,7 +234,7 @@ cycle.
 A vector register holds up to VLMAX elements. Real loops rarely have a multiple of VLMAX
 iterations.
 
-Suppose VLEN=128, 32-bit elements → 4 elements per register. Your array has 10 elements.
+Suppose VLEN=128, 32-bit elements → 4 elements per register. The array has 10 elements.
 Two full passes of 4 leaves 2 left over. What happens?
 
 **Packed SIMD's answer:** the programmer writes a separate scalar loop for the remainder.
@@ -254,7 +254,7 @@ elements `0 … vl-1` and leaves the rest alone. Before each pass, the program s
 
 No cleanup code. This loop structure is called **stripmining**, and because the *hardware*
 answers the "how many?" question, the same code works on any VLEN. This is the mechanism
-behind vector-length agnosticism, and you saw its effect in Chapter 1 §1.2 — the identical
+behind vector-length agnosticism, and one saw its effect in Chapter 1 §1.2 — the identical
 binary that ran 4, 8, and 16 elements per pass.
 
 Chapter 4 §4.4 gives the exact RISC-V rules; Chapter 7 drills the programming idiom.
@@ -262,7 +262,7 @@ Chapter 4 §4.4 gives the exact RISC-V rules; Chapter 7 drills the programming i
 ### The three regions of a vector register
 
 Once `vl` can be less than VLMAX, every vector register splits into regions during an
-operation. You must internalise this — it drives the write-enable logic in your VRF.
+operation. Teams must internalise this — it drives the write-enable logic in the VRF.
 
 ```
    ┌────────────┬─────────────────────────┬──────────────────────┐
@@ -277,7 +277,7 @@ operation. You must internalise this — it drives the write-enable logic in you
         0                                vl                   VLMAX
 ```
 
-- **Body** — the elements you actually compute. Within the body, the mask decides which
+- **Body** — the elements one actually compute. Within the body, the mask decides which
   elements are *active*.
 - **Tail** — elements past `vl`. They exist physically but are not part of this operation.
   What happens to them is a policy choice (Chapter 4 §4.8).
@@ -318,8 +318,8 @@ Two steps in hardware terms:
    inactive elements.
 
 That second point is the whole implementation: **a mask is a per-element write enable.**
-In your RTL it is one bit ANDed into the byte-enable of the VRF write port. Conceptually
-profound; structurally trivial. That is a good sign you have understood it.
+In the RTL it is one bit ANDed into the byte-enable of the VRF write port. Conceptually
+profound; structurally trivial. That is a good sign the team has understood it.
 
 Chapter 4 §4.7 covers how RVV encodes masks (spoiler: register `v0` is special).
 
@@ -337,7 +337,7 @@ Three access patterns matter, and they cost wildly different amounts:
              ▲───────────────────────────▲
              one contiguous burst
 ```
-The good case. One wide burst; if VLEN matches your cache-line width, one cache access
+The good case. One wide burst; if VLEN matches the cache-line width, one cache access
 serves the whole vector. **Optimise for this — it is 90% of real code.**
 
 ### Strided — every k-th element
@@ -408,8 +408,8 @@ masking costs almost no area.
 multi-ported bit-cell costs roughly (ports)² relative to a single-ported one, argue for or
 against building it from flip-flops.
 
-**2.6 (design decision)** Your team must pick a starting VLEN and lane count for MEDS-V.
-Write down your choice and three reasons. Revisit after Chapter 10 and see if you'd change
+**2.6 (design decision)** The team must pick a starting VLEN and lane count for MEDS-V.
+Write down the choice and three reasons. Revisit after Chapter 10 and see if one'd change
 it.
 
 ---

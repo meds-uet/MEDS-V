@@ -1,8 +1,8 @@
 # Chapter 1 — Why Vectors?
 
-> **Goal of this chapter.** Convince you, with measured numbers, that a vector processor
-> solves a real problem — and make you able to say precisely *which* problem, because that
-> determines what your hardware must be good at.
+> **Goal of this chapter.** Establish, with measured numbers, that a vector processor
+> solves a real problem — and make it possible to say precisely *which* problem, because that
+> determines what the hardware must be good at.
 
 ---
 
@@ -58,8 +58,8 @@ expensive; doing arithmetic is cheap.**
 ### The loop-carried branch is worse than it looks
 
 `bne` is not just one instruction. On a pipelined core it is a control hazard. Predict it
-right and you pay ~nothing; predict it wrong — which happens at least once per loop, on
-the final iteration — and you flush the pipeline. On a deeply pipelined machine that is
+right and one pays ~nothing; predict it wrong — which happens at least once per loop, on
+the final iteration — and one flush the pipeline. On a deeply pipelined machine that is
 10–20 cycles. A short loop that runs 8 times can spend more cycles recovering from its
 exit misprediction than doing its work.
 
@@ -101,7 +101,7 @@ hardware*.
 
 ### The measurement
 
-We ran both versions on Spike (the official RISC-V reference simulator), counting every
+Both versions were run on Spike (the official RISC-V reference simulator), counting every
 committed instruction, for N = 1024 elements, with the array-initialisation harness
 subtracted out:
 
@@ -119,27 +119,27 @@ Check the arithmetic against the model. A 128-bit vector register holds 4 × `fl
 `vl = 4`, and 10/4 = 2.50 instructions per element — measured 2.52. At VLEN=512, `vl = 16`,
 so 10/16 = 0.625 — measured 0.643. The tiny excess is the loop prologue.
 
-**The model predicts the measurement to within 3%.** That is the kind of understanding you
-want before writing RTL: you should be able to predict your own processor's instruction
+**The model predicts the measurement to within 3%.** That is the kind of understanding one
+want before writing RTL: a reader should be able to predict a processor of one's own's instruction
 count on paper.
 
 > **⚠️ Trap — instructions are not cycles.**
 > An 11× reduction in *instructions* is not an 11× reduction in *time*. A `vle32.v` that
-> loads 16 floats takes longer than an `flw` that loads one. What you have genuinely
+> loads 16 floats takes longer than an `flw` that loads one. What the team has genuinely
 > eliminated is the **overhead**: fetch, decode, hazard check, loop bookkeeping, branch
 > mispredicts. Whether that becomes 11× or 3× of real speedup depends on the
-> microarchitecture *you* are about to design. Chapter 15 is entirely about measuring this
+> microarchitecture *one* are about to design. Chapter 15 is entirely about measuring this
 > honestly.
 
 ---
 
-## 1.3 The three things vectors actually buy you
+## 1.3 The three things vectors actually buy one
 
 Be precise about the wins, because each one maps to a design decision later.
 
 ### Win 1 — Amortised instruction delivery
-One fetch/decode/issue serves `vl` elements. **Design consequence:** your front end can be
-narrow and simple. You do *not* need superscalar issue to get high throughput; MEDS-V
+One fetch/decode/issue serves `vl` elements. **Design consequence:** the front end can be
+narrow and simple. One does *not* need superscalar issue to get high throughput; MEDS-V
 issues one vector instruction at a time and still keeps many lanes busy. This is why
 vector machines are attractive for a student project — the hard part of a fast scalar core
 (wide issue, renaming, speculation) is simply not needed.
@@ -147,17 +147,17 @@ vector machines are attractive for a student project — the hard part of a fast
 ### Win 2 — Guaranteed independence
 When a program says `vadd.vv v1, v2, v3`, it is *promising* the hardware that element 0 and
 element 7 are independent. No dependency check is needed *between elements*. **Design
-consequence:** you can build N parallel **lanes** and just let them run. Deriving that same
+consequence:** one can build N parallel **lanes** and just let them run. Deriving that same
 guarantee from a scalar loop requires a dependence analyser and speculative
-memory-disambiguation hardware. The ISA hands it to you for free.
+memory-disambiguation hardware. The ISA hands it to the implementer for free.
 
 ### Win 3 — Known memory access patterns
 `vle32.v` says "give me 16 consecutive 32-bit words starting here". That is a description
-of a *pattern*, not 16 independent addresses. **Design consequence:** your load/store unit
+of a *pattern*, not 16 independent addresses. **Design consequence:** the load/store unit
 can generate one wide, aligned burst instead of 16 lookups, and the request can be issued
 long before the data is needed. Latency hiding becomes structural rather than speculative.
 
-### And the thing they don't buy you
+### And the thing they don't buy one
 Vectors do **not** help code that is:
 - **control-heavy** — `if`-dense logic with unpredictable branches (masking helps some;
   Chapter 4 §4.7),
@@ -165,7 +165,7 @@ Vectors do **not** help code that is:
 - **pointer-chasing** — linked lists, trees; the addresses aren't known in advance,
 - **short** — if N is 3, the `vsetvli` overhead dominates.
 
-Knowing what your machine is *not* for is part of the design. Say it out loud in your
+Knowing what the machine is *not* for is part of the design. Say it out loud in the
 project report.
 
 ---
@@ -177,13 +177,13 @@ data streams they manage:
 
 | | Single data stream | Multiple data streams |
 |---|---|---|
-| **Single instruction stream** | **SISD** — a classic scalar core. Your RV32I workshop processor. | **SIMD** — one instruction, many data elements. **Vector processors live here.** |
+| **Single instruction stream** | **SISD** — a classic scalar core. The RV32I workshop processor. | **SIMD** — one instruction, many data elements. **Vector processors live here.** |
 | **Multiple instruction streams** | MISD — rare; systolic/pipelined fault-tolerant designs. | **MIMD** — multicore, multiprocessor. Each core runs its own program. |
 
 Vector processors are SIMD. So are GPUs (loosely — they are more precisely SIMT), and so
 are the SIMD extensions bolted onto scalar ISAs (SSE, AVX, NEON).
 
-The distinction that matters for *your* project is not SISD vs. SIMD. It is:
+The distinction that matters for *the* project is not SISD vs. SIMD. It is:
 
 ### Packed SIMD vs. true vector
 
@@ -191,33 +191,33 @@ These are the two ways to build a SIMD machine, and RVV deliberately chose the s
 
 | | **Packed SIMD** (SSE, AVX, NEON) | **True vector** (Cray, RVV) |
 |---|---|---|
-| Register width | **Fixed by the ISA.** `xmm0` is 128 bits, forever. | **An implementation choice.** VLEN is whatever you build. |
+| Register width | **Fixed by the ISA.** `xmm0` is 128 bits, forever. | **An implementation choice.** VLEN is whatever one builds. |
 | How many elements? | Baked into the opcode. `paddd` = exactly 4 int32. | Read from the `vl` register at runtime. |
 | Widening VLEN | Requires a **new ISA**: SSE→AVX→AVX-512, new opcodes each time | Same binary, wider hardware, more speed. Nothing recompiles. |
 | Loop remainder (N not a multiple of width) | Programmer writes a scalar cleanup loop | Hardware shortens the last `vl` automatically |
-| Instruction count | 4000+ in AVX-512 | ~600 in RVV 1.0, and *far* fewer if you count opcodes |
+| Instruction count | 4000+ in AVX-512 | ~600 in RVV 1.0, and *far* fewer if one counts opcodes |
 
-That third row is the killer argument, and you already have the evidence. Look again at
+That third row is the killer argument, and one already have the evidence. Look again at
 the measurement in §1.2:
 
 > The **same, unmodified binary** produced 2.51, 1.26, and 0.64 instructions per element on
 > VLEN=128, 256 and 512 machines.
 
-We did not recompile between those rows. We changed a simulator flag. A packed-SIMD binary
+Nothing was recompiled between those rows; only a simulator flag changed. A packed-SIMD binary
 compiled for 128-bit SSE runs at exactly SSE speed on an AVX-512 machine forever, unless
 someone rebuilds it.
 
 This property is called **vector-length agnosticism (VLA)**, it is the single most
 important idea in RVV, and Chapter 7 is devoted to it.
 
-> **🎯 Milestone hook.** VLA is also why your project can be *incremental*. Build MEDS-V
+> **🎯 Milestone hook.** VLA is also why the project can be *incremental*. Build MEDS-V
 > with VLEN=128 in milestone M3; re-parameterise to VLEN=512 in M6; every test and
-> benchmark you have written still runs, unmodified. Design for this from day one and the
-> parameter is free. Hard-code `128` anywhere and you will pay for it in week 10.
+> benchmark the team has written still runs, unmodified. Design for this from day one and the
+> parameter is free. Hard-code `128` anywhere and the team will pay for it in week 10.
 
 ---
 
-## 1.5 Vector vs. GPU — a question you will be asked
+## 1.5 Vector vs. GPU — a question the team will be asked
 
 Someone will ask "why not just use a GPU?" Have an answer.
 
@@ -254,23 +254,23 @@ Rough, order-of-magnitude figures for a mature process node — the exact number
 Read the fourth row again. **Delivering an instruction can cost more energy than the
 floating-point operation it commands.**
 
-A vector instruction amortises that ~20–50× cost over `vl` elements. At `vl = 16` you have
+A vector instruction amortises that ~20–50× cost over `vl` elements. At `vl = 16` the team has
 divided the dominant energy term by 16 while the arithmetic energy stayed the same. That is
 why every serious embedded AI/DSP chip has a vector unit, and it is the argument to put in
-your project's motivation slide.
+the project's motivation slide.
 
-It also tells you where *not* to spend design effort: making the arithmetic units
+It also indicates where *not* to spend design effort: making the arithmetic units
 marginally more efficient is second-order. Keeping the lanes *fed* is first-order.
 
 ---
 
-## 1.7 What this means for the machine you are about to build
+## 1.7 What this means for the machine to be built
 
 Everything above translates into concrete requirements. This list is the seed of the block
 diagram in Chapter 8:
 
 1. **A place to hold vectors.** Not 32 × 64-bit scalars, but 32 × VLEN-bit *vector
-   registers*. This is your biggest structure by area — Chapter 9 §9.3.
+   registers*. This is the biggest structure by area — Chapter 9 §9.3.
 2. **A way to say "how many elements".** A `vl` register, and an instruction to set it.
    This is the machinery of vector-length agnosticism — Chapter 4 §4.4.
 3. **Parallel arithmetic.** Multiple **lanes**, each a slice of the register file plus its
@@ -288,23 +288,23 @@ diagram in Chapter 8:
 ## 🔧 Exercises
 
 **1.1 (everyone)** Reproduce the measurement in §1.2. The harness is in
-[`examples/02-saxpy/`](../../examples/02-saxpy/); run `make bench`. Confirm you get ~7.0
+[`examples/02-saxpy/`](../../examples/02-saxpy/); run `make bench`. Confirm one gets ~7.0
 instructions/element scalar and ~2.5 at VLEN=128.
 
 **1.2 (everyone)** Change SAXPY to use `float64` instead of `float32`. Predict the
-instructions/element at VLEN=128 *before* you measure. Then measure. Explain any gap.
+instructions/element at VLEN=128 *before* one measures. Then measure. Explain any gap.
 
 **1.3** Take the scalar loop in §1.1 and hand-count instruction fetches for N=1000. Now do
 the same for the vector loop at VLEN=256. Express the saving as a percentage of total
 front-end energy, using the table in §1.6.
 
-**1.4 (discussion)** Name three kernels from your own coursework that would vectorise well,
+**1.4 (discussion)** Name three kernels from the own coursework that would vectorise well,
 and two that would not. For the two, say *why* — dependence, control flow, or access
-pattern? Keep this list; §14 turns the good ones into your benchmark suite.
+pattern? Keep this list; §14 turns the good ones into the benchmark suite.
 
 **1.5 (mentors)** The vector loop in §1.2 has 10 instructions, of which 4 are scalar
 bookkeeping (`slli`, `sub`, `add`, `add`) and 1 is a branch. At what value of `vl` does
-scalar bookkeeping become the bottleneck again? What does that tell you about the minimum
+scalar bookkeeping become the bottleneck again? What does that indicate about the minimum
 useful VLEN for MEDS-V?
 
 ---
@@ -315,12 +315,12 @@ useful VLEN for MEDS-V?
   that computes nothing.
 - A vector instruction amortises fetch, decode, and hazard-checking across many elements.
   Measured: 7.0 → 0.64 instructions/element from scalar to VLEN=512.
-- Vectors buy you (1) amortised instruction delivery, (2) a free guarantee of element
+- Vectors buy one (1) amortised instruction delivery, (2) a free guarantee of element
   independence, (3) declared memory access patterns.
 - RVV is a **true vector** ISA, not packed SIMD: the same binary gets faster on wider
   hardware. This is *vector-length agnosticism* and it shapes every design choice ahead.
 - The dominant cost in modern chips is moving instructions and data, not arithmetic.
-  Your design goal is **keeping the lanes fed**, not building clever ALUs.
+  The design goal is **keeping the lanes fed**, not building clever ALUs.
 
 ---
 

@@ -8,7 +8,7 @@
 ## 11.1 The shape of the project
 
 Eight milestones over roughly 16 weeks. The proportions matter more than the absolute
-numbers — scale to your calendar, but **keep the ratios**.
+numbers — scale to the team's calendar, but **keep the ratios**.
 
 ```
  Week:  1    2    3    4    5    6    7    8    9   10   11   12   13   14   15   16
@@ -27,7 +27,7 @@ numbers — scale to your calendar, but **keep the ratios**.
 ```
 
 Note **M4 (the VLSU) gets four weeks** — more than any other block. That is deliberate
-(Chapter 9 §9.6). If you compress anything, do not compress that.
+(Chapter 9 §9.6). If anything must be compressed, it should not be that.
 
 ---
 
@@ -66,7 +66,7 @@ an ideal mentee assignment.
 | `meds_v_pkg.sv` (parameters and types) | Elaborates at VLEN = 128/256/512 |
 | Unit testbenches for both | 100% of the decode table covered |
 
-**Exit criterion:** feed your decoder 10 000 random 32-bit words; its `illegal_o` agrees
+**Exit criterion:** feed the decoder 10 000 random 32-bit words; its `illegal_o` agrees
 with Spike's on every one.
 
 ### M2 — VRF and the co-simulation harness (weeks 4–6)
@@ -81,7 +81,7 @@ Block ④, plus — critically — the verification infrastructure.
 | RTL trace emission (stub) | Emits the same format |
 
 > **🎯 M2 is the milestone teams are most tempted to cut, and cutting it is the single
-> biggest predictor of project failure.** You are building the checker before the thing it
+> biggest predictor of project failure.** This means building the checker before the thing it
 > checks. Chapter 13 §13.4 gives the trace format. Prove the comparison script works by
 > deliberately corrupting a trace and confirming it is caught.
 
@@ -104,7 +104,7 @@ Blocks ③ and ⑤. **The first milestone where something executes.**
 
 ### M4 — The VLSU (weeks 8–12)
 
-Block ⑥. **The hardest milestone. Four weeks. Your strongest engineer.**
+Block ⑥. **The hardest milestone. Four weeks. It should get the team's strongest engineer.**
 
 | Deliverable | Exit criterion |
 |---|---|
@@ -114,10 +114,10 @@ Block ⑥. **The hardest milestone. Four weeks. Your strongest engineer.**
 | Simple memory model + AXI wrapper | Backpressure test passes |
 | **First real program runs** | The Chapter 1 SAXPY loop executes correctly |
 
-**Exit criterion:** a compiled C program with a stripmine loop runs on your RTL and
+**Exit criterion:** a compiled C program with a stripmine loop runs on the RTL and
 produces the same memory image as Spike.
 
-That moment — the first real compiled program running on hardware you designed — is the
+That moment — the first real compiled program running on hardware the team designed — is the
 emotional high point of the project. Plan a demo.
 
 ### M5 — Masks, reductions, permutes (weeks 11–13)
@@ -174,7 +174,7 @@ No new features. Make it faster and prove it scales.
 everything after is refinement. When the schedule slips — and it will — protect these two
 by cutting from M6, never from M2.
 
-### What to cut, in order, if you run out of time
+### What to cut, in order, when time runs short
 
 1. Chaining and other M6 optimisations → cut first, always
 2. The 4-lane configuration → report 1 and 2 lanes
@@ -237,7 +237,7 @@ Friday means Monday starts with debugging instead of progress.
 
 ## 11.6 What "done" looks like
 
-At M7 you should be able to hand someone:
+At M7 a reader should be able to hand someone:
 
 - [ ] A parameterised SystemVerilog vector processor implementing a documented subset of
       RVV 1.0 (`Zve32x`-flavoured)
@@ -249,23 +249,23 @@ At M7 you should be able to hand someone:
 - [ ] A written scope contract listing exactly what is *not* implemented, and why
 - [ ] A report that states its limitations before a reviewer has to find them
 
-That last point is worth dwelling on. **A project that clearly states "we implemented
+That last point is worth dwelling on. **A project that clearly states "the team implemented
 unit-stride and strided loads, required natural alignment, and deferred indexed access
 because X" is far stronger than one that quietly omits it.** Examiners and reviewers reward
-knowing your own boundaries.
+knowing the own boundaries.
 
 ---
 
 ## 🔧 Exercises
 
-**11.1 (mentors, week 1)** Map the milestones onto your actual calendar. Where are the
+**11.1 (mentors, week 1)** Map the milestones onto the implementerr actual calendar. Where are the
 exams, holidays, and other deadlines? Adjust — but preserve the M3/M4 proportion.
 
 **11.2 (mentors, week 1)** Fill in §11.5 with real names. Identify, for each block, the
 second person who will understand it.
 
 **11.3 (whole team, week 3)** Run a pre-mortem: it is week 16 and the project failed.
-Write down why. Compare with §11.4 and add anything you found.
+Write down why. Compare with §11.4 and add anything one found.
 
 **11.4 (mentors, at each gate)** Score the exit criteria honestly. A milestone is not
 complete because the date passed.
@@ -275,16 +275,16 @@ complete because the date passed.
 ## Key takeaways
 
 - **Eight milestones, ~16 weeks.** M3 (datapath) and M4 (VLSU) are half the project.
-- **M0 is two weeks of learning with no RTL.** It is the cheapest time you will spend.
+- **M0 is two weeks of learning with no RTL.** It is the cheapest time the team will spend.
 - **M2 builds the verification harness before there is anything to verify.** This gate is
   hard: no M3 work until the trace comparator catches an injected bug.
-- **M3 gives you a working datapath with no memory** — isolating the sequencer from the
+- **M3 gives the implementer a working datapath with no memory** — isolating the sequencer from the
   VLSU.
-- **M4 gets four weeks and your strongest engineer.** The VLSU is the schedule risk.
-- Cut from M6 (optimisations) when you slip. **Never cut verification or scope discipline.**
+- **M4 gets four weeks and the strongest engineer.** The VLSU is the schedule risk.
+- Cut from M6 (optimisations) when one slip. **Never cut verification or scope discipline.**
 - Two people understand every block. The benchmark team starts at M0.
 - Friday integration build must be green.
-- **Stating your limitations clearly is a strength**, not an admission.
+- **Stating the limitations clearly is a strength**, not an admission.
 
 ---
 

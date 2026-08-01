@@ -68,15 +68,32 @@ module vrf
   // Book Ch 4 section 4.8 explains why building only the "undisturbed" path
   // makes us compliant with the agnostic policies too.
   // ---------------------------------------------------------------------------
+  // The byte merge is done COMBINATIONALLY into a next-value, and the register
+  // takes a single non-blocking assignment.  Two reasons this is the right
+  // shape, not just a style preference:
+  //
+  //   * It is one write to one array element, which is what the synthesised
+  //     hardware actually is -- a VLEN-wide register with byte write enables.
+  //   * A per-byte non-blocking assignment inside a loop is not synthesisable
+  //     in Verilator once the loop is large (it rejects VLENB=128 at
+  //     VLEN=1024 with BLKLOOPINIT).  Writing it this way makes the module
+  //     elaborate at every VLEN, which is the whole point of the parameter.
+  logic [VLEN-1:0] wdata_merged;
+
+  always_comb begin
+    wdata_merged = mem[waddr_i];                    // start from the old value
+    for (int unsigned b = 0; b < VLENB; b++)
+      if (wbe_i[b])
+        wdata_merged[b*8 +: 8] = wdata_i[b*8 +: 8]; // overwrite enabled bytes
+  end
+
   always_ff @(posedge clk_i or negedge rst_ni) begin
     if (!rst_ni) begin
       // Zero on reset: keeps simulation X-free and deterministic.
       for (int unsigned r = 0; r < 32; r++)
         mem[r] <= '0;
     end else if (we_i) begin
-      for (int unsigned b = 0; b < VLENB; b++)
-        if (wbe_i[b])
-          mem[waddr_i][b*8 +: 8] <= wdata_i[b*8 +: 8];
+      mem[waddr_i] <= wdata_merged;
     end
   end
 
